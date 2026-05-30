@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=none
+server:
+  port: 8082
+
+spring:
+  application:
+    name: content-service
+  data:
+    redis:
+      host: watch_next_redis # Docker container
+      port: 6379
+
+tmdb:
+  api:
+    base-url: https://api.themoviedb.org/3
+    key: ${TMDB_API_KEY}

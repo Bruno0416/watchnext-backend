@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=none
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+      access-token:
+        expiration: ${JWT_ACCESS_EXPIRATION}
+      refresh-token:
+        expiration: ${JWT_REFRESH_EXPIRATION}

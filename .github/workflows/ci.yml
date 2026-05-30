@@ -1,0 +1,63 @@
+name: CI WatchNext
+
+on:
+  push:
+    branches: ["main"]
+    tags:
+      - "*-v*"
+
+jobs:
+  # 1. Detecta que carpetas cambiaron
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth: ${{ steps.filter.outputs.auth }}
+      content: ${{ steps.filter.outputs.content }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            auth:
+              - 'auth-service/**'
+              - 'common/**'
+              - 'pom.xml'
+            content:
+              - 'content-service/**'
+              - 'common/**'
+              - 'pom.xml'
+
+  # 2. Compila Auth Service (Solo si hubo cambios)
+  build-auth:
+    needs: changes
+    if: ${{ needs.changes.outputs.auth == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Compilar Auth Service (Omitiendo tests)
+        run: ./mvnw -pl auth-service -am package -DskipTests
+
+  # 3. Compila Content Service (Solo si hubo cambios)
+  build-content:
+    needs: changes
+    if: ${{ needs.changes.outputs.content == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Compilar Content Service (Omitiendo tests)
+        run: ./mvnw -pl content-service -am package -DskipTests

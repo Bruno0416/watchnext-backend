@@ -1,0 +1,15 @@
+# Documentacion
+docs/
+
+# Variables de entorno
+.env
+
+# Carpetas de compilación de Maven
+target/
+*/target/
+
+# Archivos del IDE (Zed, IntelliJ, VSCode, etc.)
+.idea/
+.vscode/
+*.iml
+.DS_Store
