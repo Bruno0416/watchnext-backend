@@ -6,6 +6,7 @@ COPY pom.xml .
 COPY common/pom.xml common/
 COPY auth-service/pom.xml auth-service/
 COPY content-service/pom.xml content-service/
+COPY gateway/pom.xml gateway/
 
 # cachea dependencias de auth-service y sus deps (common)
 RUN mvn -pl auth-service -am dependency:go-offline -q

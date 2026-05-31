@@ -16,7 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JwtService {
+public class JwtUtil {
 
     @Value("${application.security.jwt.secret-key}")
     private String jwtSecret;

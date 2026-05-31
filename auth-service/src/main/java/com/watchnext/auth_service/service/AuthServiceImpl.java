@@ -9,7 +9,7 @@ import com.watchnext.auth_service.exceptions.EmailAlreadyInUseException;
 import com.watchnext.auth_service.exceptions.InvalidCredentialsException;
 import com.watchnext.auth_service.exceptions.InvalidRefreshTokenException;
 import com.watchnext.auth_service.repository.UserRepository;
-import com.watchnext.auth_service.security.JwtService;
+import com.watchnext.auth_service.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,7 +22,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository repo;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final JwtUtil jwtService;
     private final AuthenticationManager authManager;
 
     @Override

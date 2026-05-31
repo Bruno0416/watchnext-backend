@@ -5,6 +5,7 @@ COPY pom.xml .
 COPY common/pom.xml common/
 COPY auth-service/pom.xml auth-service/
 COPY content-service/pom.xml content-service/
+COPY gateway/pom.xml gateway/
 
 RUN mvn -pl content-service -am dependency:go-offline -q
 
