@@ -7,6 +7,9 @@ COPY auth-service/pom.xml auth-service/
 COPY content-service/pom.xml content-service/
 COPY gateway/pom.xml gateway/
 
+# Instala el POM raiz en el cache local de Maven dentro de Docker
+RUN mvn -N install -q
+
 RUN mvn -pl content-service -am dependency:go-offline -q
 
 COPY common/src common/src

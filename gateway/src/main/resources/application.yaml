@@ -23,9 +23,3 @@ application:
   security:
     jwt:
       secret-key: ${JWT_SECRET}
-
-logging:
-  level:
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.web.servlet: DEBUG
-    com.watchnext.gateway.filter.AuthenticationFilter: DEBUG
