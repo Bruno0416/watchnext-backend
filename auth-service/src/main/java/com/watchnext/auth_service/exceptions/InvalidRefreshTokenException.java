@@ -1,8 +1,11 @@
 package com.watchnext.auth_service.exceptions;
 
-public class InvalidRefreshTokenException extends RuntimeException {
+import com.watchnext.common.exceptions.WatchNextException;
+import org.springframework.http.HttpStatus;
+
+public class InvalidRefreshTokenException extends WatchNextException {
 
     public InvalidRefreshTokenException(String message) {
-        super(message);
+        super(HttpStatus.UNAUTHORIZED, message);
     }
 }

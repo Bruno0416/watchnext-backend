@@ -29,7 +29,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse register(RegisterRequest request) {
         // 1. validar si el usuario ya tiene cuenta
         if (repo.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyInUseException("Email already exists");
+            throw new EmailAlreadyInUseException(request.getEmail());
         }
 
         // 2. construir entidad usuasrio
@@ -63,14 +63,14 @@ public class AuthServiceImpl implements AuthService {
                 )
             );
         } catch (Exception e) {
-            throw new InvalidCredentialsException("Credentials are invalid");
+            throw new InvalidCredentialsException("Credenciales invalidas");
         }
 
         // 2. buscar usuario en el repo
         Users user = repo
             .findByEmail(request.getEmail())
             .orElseThrow(() ->
-                new InvalidCredentialsException("Credentials are invalid")
+                new InvalidCredentialsException("Credenciales invalidas")
             );
 
         // 3. generar tokens y retornar

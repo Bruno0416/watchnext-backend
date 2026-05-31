@@ -5,8 +5,14 @@ import com.watchnext.content_service.dto.movies.MovieListResponse;
 import com.watchnext.content_service.dto.tv.TvDetails;
 import com.watchnext.content_service.dto.tv.TvListResponse;
 import com.watchnext.content_service.dto.tv.TvSeason;
+import com.watchnext.content_service.exceptions.ErrorFetchingMovieDetails;
+import com.watchnext.content_service.exceptions.ErrorFetchingMovieList;
+import com.watchnext.content_service.exceptions.ErrorFetchingTvDetails;
+import com.watchnext.content_service.exceptions.ErrorFetchingTvList;
+import com.watchnext.content_service.exceptions.TmdbResourceNotFoundException;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -48,6 +54,22 @@ public class TmdbClient {
                     .build(movieId)
             )
             .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                response -> Mono.error(
+                    new TmdbResourceNotFoundException(
+                        "Pelicula con id " + movieId + " no encontrada"
+                    )
+                )
+            )
+            .onStatus(
+                HttpStatusCode::isError,
+                response -> Mono.error(
+                    new ErrorFetchingMovieDetails(
+                        "Error al obtener detalles de la pelicula con id " + movieId
+                    )
+                )
+            )
             .bodyToMono(MovieDetails.class);
     }
 
@@ -85,6 +107,14 @@ public class TmdbClient {
                     .build()
             )
             .retrieve()
+            .onStatus(
+                HttpStatusCode::isError,
+                response -> Mono.error(
+                    new ErrorFetchingMovieList(
+                        "Error al obtener lista de peliculas desde TMDB"
+                    )
+                )
+            )
             .bodyToMono(MovieListResponse.class);
     }
 
@@ -100,6 +130,22 @@ public class TmdbClient {
                     .build(tvId)
             )
             .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                response -> Mono.error(
+                    new TmdbResourceNotFoundException(
+                        "Serie con id " + tvId + " no encontrada"
+                    )
+                )
+            )
+            .onStatus(
+                HttpStatusCode::isError,
+                response -> Mono.error(
+                    new ErrorFetchingTvDetails(
+                        "Error al obtener detalles de la serie con id " + tvId
+                    )
+                )
+            )
             .bodyToMono(TvDetails.class);
     }
 
@@ -117,6 +163,22 @@ public class TmdbClient {
                     .build(tvId, seasonNumber)
             )
             .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                response -> Mono.error(
+                    new TmdbResourceNotFoundException(
+                        "Temporada " + seasonNumber + " de la serie " + tvId + " no encontrada"
+                    )
+                )
+            )
+            .onStatus(
+                HttpStatusCode::isError,
+                response -> Mono.error(
+                    new ErrorFetchingTvDetails(
+                        "Error al obtener temporada " + seasonNumber + " de la serie " + tvId
+                    )
+                )
+            )
             .bodyToMono(TvSeason.class);
     }
 
@@ -147,6 +209,14 @@ public class TmdbClient {
                     .build()
             )
             .retrieve()
+            .onStatus(
+                HttpStatusCode::isError,
+                response -> Mono.error(
+                    new ErrorFetchingTvList(
+                        "Error al obtener lista de series desde TMDB"
+                    )
+                )
+            )
             .bodyToMono(TvListResponse.class);
     }
 }

@@ -1,8 +1,11 @@
 package com.watchnext.auth_service.exceptions;
 
-public class InvalidCredentialsException extends RuntimeException {
+import com.watchnext.common.exceptions.WatchNextException;
+import org.springframework.http.HttpStatus;
+
+public class InvalidCredentialsException extends WatchNextException {
 
     public InvalidCredentialsException(String message) {
-        super(message);
+        super(HttpStatus.UNAUTHORIZED, message);
     }
 }

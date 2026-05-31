@@ -10,16 +10,12 @@ public interface ContentService {
     // ------> Movies <------
     // 1. Obtener detalle pelicula
     Mono<MovieDetails> getMovieDetails(Integer movieId, String language);
-
     // 2. Now Playing
     Mono<MovieListResponse> getNowPlayingMovies(Integer page, String language);
-
     // 3. Popular
     Mono<MovieListResponse> getPopularMovies(Integer page, String language);
-
     // 4. Top Rated
     Mono<MovieListResponse> getTopRatedMovies(Integer page, String language);
-
     // 5. Upcoming
     Mono<MovieListResponse> getUpcomingMovies(Integer page, String language);
 

@@ -1,8 +1,14 @@
 package com.watchnext.auth_service.exceptions;
 
-public class EmailAlreadyInUseException extends RuntimeException {
+import com.watchnext.common.exceptions.WatchNextException;
+import org.springframework.http.HttpStatus;
 
-    public EmailAlreadyInUseException(String message) {
-        super(message);
+public class EmailAlreadyInUseException extends WatchNextException {
+
+    public EmailAlreadyInUseException(String email) {
+        super(
+            HttpStatus.CONFLICT,
+            "El email " + email + " ya está registrado."
+        );
     }
 }
