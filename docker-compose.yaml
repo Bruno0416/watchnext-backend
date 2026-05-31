@@ -1,4 +1,19 @@
 services:
+  # ---- GATEWAY ----
+  api-gateway:
+    build:
+      context: ./gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - content-service
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - watch_next-network
+
   # ---- AUTH ----
   auth-service:
     build:
