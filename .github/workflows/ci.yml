@@ -42,6 +42,8 @@ jobs:
           cache: "maven"
       - name: Dar permisos a Maven
         run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N -DskipTests
       - name: Compilar Auth Service (Omitiendo tests)
         run: ./mvnw -pl auth-service -am package -DskipTests
 
@@ -59,6 +61,8 @@ jobs:
           cache: "maven"
       - name: Dar permisos a Maven
         run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N -DskipTests
       - name: Compilar Content Service (Omitiendo tests)
         run: ./mvnw -pl content-service -am package -DskipTests
 
@@ -76,5 +80,7 @@ jobs:
           cache: "maven"
       - name: Dar permisos a Maven
         run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N -DskipTests
       - name: Compilar List Service (Omitiendo tests)
         run: ./mvnw -pl list-service -am package -DskipTests
