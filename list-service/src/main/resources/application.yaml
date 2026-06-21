@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=none
+server:
+  port: 8083
+
+spring:
+  application:
+    name: list-service
+
+  datasource:
+    url: ${LIST_DB_URL}
+    username: ${LIST_DB_USER}
+    password: ${LIST_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
