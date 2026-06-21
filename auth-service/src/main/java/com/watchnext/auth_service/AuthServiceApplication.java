@@ -4,7 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(
-    scanBasePackages = { "com.watchnext.auth_service", "com.watchnext.common" }
+    scanBasePackages = {
+        "com.watchnext.auth_service",
+        "com.watchnext.common.exceptions",
+    }
 )
 public class AuthServiceApplication {
 
