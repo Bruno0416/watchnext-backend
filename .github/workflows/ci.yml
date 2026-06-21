@@ -13,6 +13,7 @@ jobs:
     outputs:
       auth: ${{ steps.filter.outputs.auth }}
       content: ${{ steps.filter.outputs.content }}
+      list: ${{ steps.filter.outputs.list }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -23,10 +24,17 @@ jobs:
               - 'auth-service/**'
               - 'common/**'
               - 'pom.xml'
+              - '.github/workflows/ci.yml'
             content:
               - 'content-service/**'
               - 'common/**'
               - 'pom.xml'
+              - '.github/workflows/ci.yml'
+            list:
+              - 'list-service/**'
+              - 'common/**'
+              - 'pom.xml'
+              - '.github/workflows/ci.yml'
 
   # 2. Compila Auth Service (Solo si hubo cambios)
   build-auth:
