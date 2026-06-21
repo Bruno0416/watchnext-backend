@@ -18,6 +18,10 @@ spring:
               uri: http://content-service:8082
               predicates:
                 - Path=/api/v1/content/**
+            - id: list-service
+              uri: http://list-service:8083
+              predicates:
+                - Path=/api/v1/list/**
 
 application:
   security:

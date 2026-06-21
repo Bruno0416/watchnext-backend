@@ -4,7 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(
-    scanBasePackages = { "com.watchnext.gateway", "com.watchnext.common" }
+    scanBasePackages = {
+        "com.watchnext.gateway",
+        "com.watchnext.common.exceptions",
+    }
 )
 public class GatewayApplication {
 
