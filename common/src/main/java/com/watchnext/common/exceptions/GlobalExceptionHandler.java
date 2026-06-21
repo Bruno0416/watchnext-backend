@@ -101,6 +101,8 @@ public class GlobalExceptionHandler {
         problemDetail.setTitle("Error interno del servidor");
         problemDetail.setProperty("timestamp", Instant.now());
 
+        System.out.println(ex.getMessage());
+
         return problemDetail;
     }
 

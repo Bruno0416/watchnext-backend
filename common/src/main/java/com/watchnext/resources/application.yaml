@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: common
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
