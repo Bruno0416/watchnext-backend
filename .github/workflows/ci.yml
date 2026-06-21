@@ -61,3 +61,20 @@ jobs:
         run: chmod +x mvnw
       - name: Compilar Content Service (Omitiendo tests)
         run: ./mvnw -pl content-service -am package -DskipTests
+
+  # 4. Compila List Service (Solo si hubo cambios)
+  build-list:
+    needs: changes
+    if: ${{ needs.changes.outputs.list == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Compilar List Service (Omitiendo tests)
+        run: ./mvnw -pl list-service -am package -DskipTests
