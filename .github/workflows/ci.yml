@@ -51,9 +51,9 @@ jobs:
       - name: Dar permisos a Maven
         run: chmod +x mvnw
       - name: Instalar root POM
-        run: ./mvnw install -N -DskipTests
-      - name: Compilar Auth Service (Omitiendo tests)
-        run: ./mvnw -pl auth-service -am package -DskipTests
+        run: ./mvnw install -N
+      - name: Compilar Auth Service
+        run: ./mvnw -pl auth-service -am package
 
   # 3. Compila Content Service (Solo si hubo cambios)
   build-content:
@@ -70,9 +70,9 @@ jobs:
       - name: Dar permisos a Maven
         run: chmod +x mvnw
       - name: Instalar root POM
-        run: ./mvnw install -N -DskipTests
-      - name: Compilar Content Service (Omitiendo tests)
-        run: ./mvnw -pl content-service -am package -DskipTests
+        run: ./mvnw install -N
+      - name: Compilar Content Service
+        run: ./mvnw -pl content-service -am package
 
   # 4. Compila List Service (Solo si hubo cambios)
   build-list:
@@ -89,6 +89,6 @@ jobs:
       - name: Dar permisos a Maven
         run: chmod +x mvnw
       - name: Instalar root POM
-        run: ./mvnw install -N -DskipTests
-      - name: Compilar List Service (Omitiendo tests)
-        run: ./mvnw -pl list-service -am package -DskipTests
+        run: ./mvnw install -N
+      - name: Compilar List Service
+        run: ./mvnw -pl list-service -am package
