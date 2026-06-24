@@ -22,8 +22,8 @@ public class UserAuthenticationConverter
 
         User user = new User(
             jwt.getClaimAsString("id"),
-            jwt.getClaimAsString("email"),
             jwt.getClaimAsString("name"),
+            jwt.getClaimAsString("email"),
             role
         );
 
