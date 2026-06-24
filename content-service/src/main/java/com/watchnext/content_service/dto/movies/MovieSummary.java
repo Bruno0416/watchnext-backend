@@ -2,50 +2,20 @@ package com.watchnext.content_service.dto.movies;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class MovieSummary {
-
-    private Integer id;
-
-    private String title;
-
-    @JsonProperty("original_title")
-    private String originalTitle;
-
-    private String overview;
-
-    @JsonProperty("poster_path")
-    private String posterPath;
-
-    @JsonProperty("backdrop_path")
-    private String backdropPath;
-
-    @JsonProperty("release_date")
-    private String releaseDate;
-
-    @JsonProperty("vote_average")
-    private Double voteAverage;
-
-    @JsonProperty("vote_count")
-    private Integer voteCount;
-
-    private Double popularity;
-
-    @JsonProperty("genre_ids")
-    private List<Integer> genreIds;
-
-    @JsonProperty("original_language")
-    private String originalLanguage;
-
-    private Boolean adult;
-
-    private Boolean video;
-}
+public record MovieSummary(
+    Integer id,
+    String title,
+    @JsonProperty("original_title") String originalTitle,
+    String overview,
+    @JsonProperty("poster_path") String posterPath,
+    @JsonProperty("backdrop_path") String backdropPath,
+    @JsonProperty("release_date") String releaseDate,
+    @JsonProperty("vote_average") Double voteAverage,
+    @JsonProperty("vote_count") Integer voteCount,
+    Double popularity,
+    @JsonProperty("genre_ids") List<Integer> genreIds,
+    @JsonProperty("original_language") String originalLanguage,
+    Boolean adult,
+    Boolean video
+) {}

@@ -1,4 +1,4 @@
-package com.watchnext.content_service.service;
+package com.watchnext.content_service.service.content;
 
 import com.watchnext.content_service.dto.movies.MovieDetails;
 import com.watchnext.content_service.dto.movies.MovieListResponse;

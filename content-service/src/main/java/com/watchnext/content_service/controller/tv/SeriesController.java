@@ -1,8 +1,8 @@
-package com.watchnext.content_service.controller;
+package com.watchnext.content_service.controller.tv;
 
-import com.watchnext.content_service.dto.movies.MovieDetails;
-import com.watchnext.content_service.dto.movies.MovieListResponse;
-import com.watchnext.content_service.service.ContentService;
+import com.watchnext.content_service.dto.tv.TvDetails;
+import com.watchnext.content_service.dto.tv.TvListResponse;
+import com.watchnext.content_service.service.content.ContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,65 +13,54 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("api/v1/content/movies")
 @RequiredArgsConstructor
-public class MoviesController {
+@RequestMapping("api/v1/content/tv")
+public class SeriesController {
 
     private final ContentService contentService;
 
-    // 1. Detalle de Película
+    // 1. obtener detalles de serie especifica
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<MovieDetails>> getMovieDetails(
+    public Mono<ResponseEntity<TvDetails>> getTvDetails(
         @PathVariable Integer id,
         @RequestParam(defaultValue = "en-US") String language
     ) {
         return contentService
-            .getMovieDetails(id, language)
+            .getTvDetails(id, language)
             .map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    // 2. Now Playing
-    @GetMapping("/now-playing")
-    public Mono<ResponseEntity<MovieListResponse>> getNowPlayingMovies(
+    // 2. obtener lista de series en emision
+    @GetMapping("/on-the-air")
+    public Mono<ResponseEntity<TvListResponse>> getOnTheAir(
         @RequestParam(defaultValue = "1") Integer page,
         @RequestParam(defaultValue = "en-US") String language
     ) {
         return contentService
-            .getNowPlayingMovies(page, language)
+            .getOnTheAir(page, language)
             .map(ResponseEntity::ok);
     }
 
-    // 3. Popular
+    // 3. obtener lista de series populares
     @GetMapping("/popular")
-    public Mono<ResponseEntity<MovieListResponse>> getPopularMovies(
+    public Mono<ResponseEntity<TvListResponse>> getPopularTv(
         @RequestParam(defaultValue = "1") Integer page,
         @RequestParam(defaultValue = "en-US") String language
     ) {
         return contentService
-            .getPopularMovies(page, language)
+            .getPopularTv(page, language)
             .map(ResponseEntity::ok);
     }
 
-    // 4. Top Rated
+    // 4. obtener lista de series mejor valoradas
     @GetMapping("/top-rated")
-    public Mono<ResponseEntity<MovieListResponse>> getTopRatedMovies(
+    public Mono<ResponseEntity<TvListResponse>> getTopRatedTv(
         @RequestParam(defaultValue = "1") Integer page,
         @RequestParam(defaultValue = "en-US") String language
     ) {
         return contentService
-            .getTopRatedMovies(page, language)
-            .map(ResponseEntity::ok);
-    }
-
-    // 5. Upcoming
-    @GetMapping("/upcoming")
-    public Mono<ResponseEntity<MovieListResponse>> getUpcomingMovies(
-        @RequestParam(defaultValue = "1") Integer page,
-        @RequestParam(defaultValue = "en-US") String language
-    ) {
-        return contentService
-            .getUpcomingMovies(page, language)
+            .getTopRatedTv(page, language)
             .map(ResponseEntity::ok);
     }
 }
