@@ -11,15 +11,21 @@ spring:
         webmvc:
           routes:
             - id: auth-service
-              uri: http://auth-service:8081
+              uri: lb://auth-service
               predicates:
                 - Path=/api/v1/auth/**
             - id: content-service
-              uri: http://content-service:8082
+              uri: lb://content-service
               predicates:
                 - Path=/api/v1/content/**
+            - id: content-service-internal-block
+              uri: no://op
+              predicates:
+                - Path=/api/v1/content/internal/**
+              filters:
+                - SetStatus=403
             - id: list-service
-              uri: http://list-service:8083
+              uri: lb://list-service
               predicates:
                 - Path=/api/v1/list/**
 
@@ -27,3 +33,14 @@ application:
   security:
     jwt:
       secret-key: ${JWT_SECRET}
+
+eureka:
+  client:
+    registry-fetch-interval-seconds: 10
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://admin:${EUREKA_ADMIN_PASSWD}@eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
