@@ -1,10 +1,12 @@
 package com.watchnext.list_service.service;
 
 import com.watchnext.common.dto.ContentRefRequest;
+import com.watchnext.common.dto.internal.ContentBasicDetail;
 import com.watchnext.common.model.ContentRef;
 import com.watchnext.common.model.MediaType;
 import com.watchnext.common.model.User;
 import com.watchnext.common.security.CurrentUser;
+import com.watchnext.list_service.client.ContentServiceClient;
 import com.watchnext.list_service.dto.CreateListRequest;
 import com.watchnext.list_service.dto.ItemsRequest;
 import com.watchnext.list_service.dto.ListDetailResponse;
@@ -12,6 +14,8 @@ import com.watchnext.list_service.dto.MyListsResponse;
 import com.watchnext.list_service.entity.ListItem;
 import com.watchnext.list_service.entity.UserList;
 import com.watchnext.list_service.exceptions.ItemAlreadyExistsException;
+import com.watchnext.list_service.exceptions.ListAlreadyExistsException;
+import com.watchnext.list_service.exceptions.ListNotFoundException;
 import com.watchnext.list_service.mapper.ContentRefMapper;
 import com.watchnext.list_service.mapper.UserListMapper;
 import com.watchnext.list_service.repository.ListItemRepository;
@@ -36,6 +40,9 @@ public class ListServiceImpl implements ListService {
     private final ContentRefMapper contentRefMapper;
     private final UserListMapper listMapper;
 
+    // ------- Clientes -------
+    private final ContentServiceClient contentClient;
+
     @Override
     @Transactional
     public void createList(CreateListRequest request) {
@@ -44,26 +51,25 @@ public class ListServiceImpl implements ListService {
 
         // 2. validar existencia de lista con mismo nombre
         listRepo
-            .findByUserIdAndName(user.id(), request.getName())
+            .findByUserIdAndName(user.id(), request.name())
             .ifPresent(existingList -> {
-                throw new IllegalArgumentException(
-                    // TODO: crear excepcion
-                    "Ya existe una lista con el nombre: " + request.getName()
+                throw new ListAlreadyExistsException(
+                    "Ya existe una lista con el nombre: " + request.name()
                 );
             });
         // 3. crear lista
         UserList list = UserList.builder()
             .userId(user.id())
-            .name(request.getName())
-            .description(request.getDescription())
+            .name(request.name())
+            .description(request.description())
             .build();
 
         listRepo.save(list);
 
         // 4. agregar lista de peliculas si no es null
-        if (!request.getContentRefs().isEmpty()) {
+        if (!request.contentRefs().isEmpty()) {
             contentRefMapper
-                .toModelList(request.getContentRefs())
+                .toModelList(request.contentRefs())
                 .forEach(content ->
                     list.addItem(ListItem.builder().content(content).build())
                 );
@@ -79,14 +85,11 @@ public class ListServiceImpl implements ListService {
         UserList list = listRepo
             .findByUserIdAndId(user.id(), listId)
             .orElseThrow(() ->
-                new IllegalArgumentException(
-                    // TODO: crear excepcion
-                    "Lista no encontrada"
-                )
+                new ListNotFoundException("Lista no encontrada")
             );
 
         // 2. agregar items a la lista
-        record ItemKey(Long tmdbId, MediaType mediaType) {}
+        record ItemKey(Integer tmdbId, MediaType mediaType) {}
 
         // 3. Cargamos los items que YA existen en la lista actual en un Set.
         Set<ItemKey> existingItems = list
@@ -102,18 +105,18 @@ public class ListServiceImpl implements ListService {
 
         // 4. Filtramos la request para quedarnos SOLO con los items nuevos.
         List<ContentRefRequest> itemsToAdd = request
-            .getItems()
+            .items()
             .stream()
             .filter(
                 ref ->
                     !existingItems.contains(
-                        new ItemKey(ref.getTmdbId(), ref.getMediaType())
+                        new ItemKey(ref.tmdbId(), ref.mediaType())
                     )
             )
             .toList();
 
         // 5. Si la lista original tenia items, pero despues de filtrar quedo vacia
-        if (itemsToAdd.isEmpty() && !request.getItems().isEmpty()) {
+        if (itemsToAdd.isEmpty() && !request.items().isEmpty()) {
             throw new ItemAlreadyExistsException(
                 "Todos los contenidos enviados ya están en la lista"
             );
@@ -140,13 +143,11 @@ public class ListServiceImpl implements ListService {
 
         if (
             !listRepo.existsByUserIdAndId(user.id(), listId)
-        ) throw new IllegalArgumentException(
-            "Lista no encontrada o no pertenece al usuario"
-        );
+        ) throw new ListNotFoundException();
 
         // 2. mapear dto a lista de objetos
         List<ContentRef> contentsToRemove = contentRefMapper.toModelList(
-            request.getItems()
+            request.items()
         );
 
         // 3. eliminar items
@@ -161,10 +162,7 @@ public class ListServiceImpl implements ListService {
         // 2. eliminar lista
         int deletedRows = listRepo.deleteByIdAndUserIdMatch(listId, user.id());
         if (deletedRows == 0) {
-            throw new IllegalArgumentException(
-                // TODO: crear excepcion
-                "Lista no encontrada o no pertenece al usuario"
-            );
+            throw new ListNotFoundException();
         }
     }
 
@@ -179,18 +177,27 @@ public class ListServiceImpl implements ListService {
     }
 
     @Override
-    public ListDetailResponse getListDetails(UUID listId) {
+    public ListDetailResponse getListDetails(UUID listId, String language) {
         // 1. obtener usuario
         User user = CurrentUser.get();
         // 2. obtener lista
         UserList list = listRepo
             .findByUserIdAndId(user.id(), listId)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "Lista no encontrada o no pertenece al usuario"
-                )
-            );
+            .orElseThrow(ListNotFoundException::new);
 
-        return listMapper.toDetailResponse(list);
+        // 3. obtener detalles de los items
+        List<ContentRefRequest> requests = list
+            .getItems()
+            .stream()
+            .map(item -> item.getContent())
+            .map(contentRefMapper::toRequest)
+            .toList();
+
+        List<ContentBasicDetail> contents = contentClient.fetchBulkContent(
+            requests,
+            language
+        );
+
+        return listMapper.toDetailResponse(list, contents);
     }
 }

@@ -12,6 +12,10 @@ spring:
     password: ${LIST_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+content-service:
+  api:
+    base-url: http://content-service:8082/api/v1/content/internal
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -23,3 +27,13 @@ application:
   security:
     jwt:
       secret-key: ${JWT_SECRET}
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://admin:${EUREKA_ADMIN_PASSWD}@eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}

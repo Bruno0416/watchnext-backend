@@ -18,5 +18,5 @@ public interface ListService {
     // 5. ver mis listas
     MyListsResponse getMyLists();
     // 6. detalle lista
-    ListDetailResponse getListDetails(UUID listId);
+    ListDetailResponse getListDetails(UUID listId, String language);
 }
