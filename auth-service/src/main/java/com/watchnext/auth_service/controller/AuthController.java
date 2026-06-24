@@ -42,7 +42,7 @@ public class AuthController {
         @Valid @RequestBody RefreshTokenRequest request
     ) {
         return ResponseEntity.ok(
-            authService.refreshToken(request.getRefreshToken())
+            authService.refreshToken(request.refreshToken())
         );
     }
 }

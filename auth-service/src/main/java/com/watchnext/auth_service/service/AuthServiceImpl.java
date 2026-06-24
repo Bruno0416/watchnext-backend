@@ -28,16 +28,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse register(RegisterRequest request) {
         // 1. validar si el usuario ya tiene cuenta
-        if (repo.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyInUseException(request.getEmail());
+        if (repo.existsByEmail(request.email())) {
+            throw new EmailAlreadyInUseException(request.email());
         }
 
         // 2. construir entidad usuasrio
         Users user = repo.save(
             Users.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
+                .username(request.username())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
                 .role(Role.USER)
                 .build()
         );
@@ -46,10 +46,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        return AuthResponse.builder()
-            .token(accessToken)
-            .refreshToken(refreshToken)
-            .build();
+        return new AuthResponse(accessToken, refreshToken);
     }
 
     @Override
@@ -58,8 +55,8 @@ public class AuthServiceImpl implements AuthService {
         try {
             authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                    request.getEmail(),
-                    request.getPassword()
+                    request.email(),
+                    request.password()
                 )
             );
         } catch (Exception e) {
@@ -68,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 2. buscar usuario en el repo
         Users user = repo
-            .findByEmail(request.getEmail())
+            .findByEmail(request.email())
             .orElseThrow(() ->
                 new InvalidCredentialsException("Credenciales invalidas")
             );
@@ -77,10 +74,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        return AuthResponse.builder()
-            .token(accessToken)
-            .refreshToken(refreshToken)
-            .build();
+        return new AuthResponse(accessToken, refreshToken);
     }
 
     @Override
@@ -99,10 +93,7 @@ public class AuthServiceImpl implements AuthService {
                 String newAccessToken = jwtService.generateToken(user);
                 String newRefreshToken = jwtService.generateRefreshToken(user);
 
-                return AuthResponse.builder()
-                    .token(newAccessToken)
-                    .refreshToken(newRefreshToken)
-                    .build();
+                return new AuthResponse(newAccessToken, newRefreshToken);
             }
         }
         throw new InvalidRefreshTokenException("Invalid refresh token");

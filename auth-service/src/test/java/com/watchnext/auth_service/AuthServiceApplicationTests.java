@@ -1,11 +1,11 @@
 package com.watchnext.auth_service;
 
-// import org.junit.jupiter.api.Test;
-// import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 
-// @SpringBootTest
-// class AuthServiceApplicationTests {
+@SpringBootTest
+class AuthServiceApplicationTests {
 
-//     @Test
-//     void contextLoads() {}
-// }
+    @Test
+    void contextLoads() {}
+}
