@@ -27,7 +27,13 @@ public class ResourceServerConfig {
             .sessionManagement(sm ->
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+            .authorizeHttpRequests(auth ->
+                auth
+                    .requestMatchers("/api/v1/*/internal/**")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated()
+            )
             .oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwt ->
                     jwt.jwtAuthenticationConverter(

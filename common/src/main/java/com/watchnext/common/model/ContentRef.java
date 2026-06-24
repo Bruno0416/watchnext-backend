@@ -19,7 +19,7 @@ public class ContentRef {
 
     // ID para el contenido (Pelicula o Serie)
     @Column(name = "tmdb_id", nullable = false)
-    private Long tmdbId;
+    private Integer tmdbId;
 
     // Enum del tipo de contenido
     @Enumerated(EnumType.STRING)
