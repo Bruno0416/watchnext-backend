@@ -1,4 +1,29 @@
 services:
+  # ---- EUREKA SERVER ----
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    container_name: watch_next_eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - watch_next-network
+    env_file: .env
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "-q",
+          "http://localhost:8761/actuator/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   # ---- GATEWAY ----
   api-gateway:
     build:
@@ -7,9 +32,14 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - auth-service
-      - content-service
-      - list-service
+      auth-service:
+        condition: service_started
+      content-service:
+        condition: service_started
+      list-service:
+        condition: service_started
+      eureka-server:
+        condition: service_healthy
     env_file: .env
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -25,6 +55,9 @@ services:
     ports:
       - "8081:8081"
     env_file: .env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
     networks:
       - watch_next-network
 
@@ -38,7 +71,10 @@ services:
       - "8082:8082"
     env_file: .env
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      eureka-server:
+        condition: service_healthy
     networks:
       - watch_next-network
 
@@ -58,6 +94,9 @@ services:
       dockerfile: list-service/Dockerfile
     container_name: watch_next_list
     env_file: .env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
     ports:
       - "8083:8083"
     networks:
