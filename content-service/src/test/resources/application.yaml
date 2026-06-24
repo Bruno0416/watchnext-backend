@@ -1,0 +1,15 @@
+eureka:
+  client:
+    enabled: false
+
+tmdb:
+  api:
+    key: "test-key"
+    base-url: "https://api.themoviedb.org/3"
+
+application:
+  security:
+    jwt:
+      secret-key: "clave-secreta-falsa-solo-para-entorno-de-pruebas"
+      access-token:
+        expiration: 86400000

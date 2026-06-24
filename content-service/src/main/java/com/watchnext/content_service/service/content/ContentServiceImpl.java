@@ -1,4 +1,4 @@
-package com.watchnext.content_service.service;
+package com.watchnext.content_service.service.content;
 
 import com.watchnext.content_service.client.TmdbClient;
 import com.watchnext.content_service.dto.movies.MovieDetails;
@@ -28,6 +28,7 @@ public class ContentServiceImpl implements ContentService {
         Integer movieId,
         String language
     ) {
+        // 1. obtener detalles de pelicula buscando en cache o realizando la peticion a tmdb
         return cacheOrFetch(
             "movie:details:" + movieId + ":" + language,
             MovieDetails.class,
@@ -41,6 +42,7 @@ public class ContentServiceImpl implements ContentService {
         Integer page,
         String language
     ) {
+        // 1. obtener peliculas en cartelera buscando en cache o tmdb
         return cacheOrFetch(
             "movie:now_playing:" + page + ":" + language,
             MovieListResponse.class,
@@ -54,6 +56,7 @@ public class ContentServiceImpl implements ContentService {
         Integer page,
         String language
     ) {
+        // 1. obtener peliculas populares buscando en cache o tmdb
         return cacheOrFetch(
             "movie:popular:" + page + ":" + language,
             MovieListResponse.class,
@@ -92,6 +95,7 @@ public class ContentServiceImpl implements ContentService {
 
     @Override
     public Mono<TvDetails> getTvDetails(Integer tvId, String language) {
+        // 1. obtener detalles de serie buscando en cache o realizando peticion a tmdb
         return cacheOrFetch(
             "tv:details:" + tvId + ":" + language,
             TvDetails.class,
@@ -137,12 +141,14 @@ public class ContentServiceImpl implements ContentService {
         Duration ttl,
         Mono<T> fetch
     ) {
+        // 1. intentar obtener valor desde redis
         return redisTemplate
             .opsForValue()
             .get(cacheKey)
             .cast(type)
             .onErrorResume(e -> Mono.empty())
             .switchIfEmpty(
+                // 2. si no existe, ejecutar peticion y guardar en cache con el ttl proporcionado
                 fetch.flatMap(value ->
                     redisTemplate
                         .opsForValue()

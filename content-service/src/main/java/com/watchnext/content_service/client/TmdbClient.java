@@ -1,7 +1,10 @@
 package com.watchnext.content_service.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.watchnext.content_service.dto.movies.MovieDetails;
 import com.watchnext.content_service.dto.movies.MovieListResponse;
+import com.watchnext.content_service.dto.search.SearchResult;
 import com.watchnext.content_service.dto.tv.TvDetails;
 import com.watchnext.content_service.dto.tv.TvListResponse;
 import com.watchnext.content_service.dto.tv.TvSeason;
@@ -11,6 +14,8 @@ import com.watchnext.content_service.exceptions.ErrorFetchingTvDetails;
 import com.watchnext.content_service.exceptions.ErrorFetchingTvList;
 import com.watchnext.content_service.exceptions.TmdbResourceNotFoundException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -23,11 +28,15 @@ import reactor.netty.http.client.HttpClient;
 public class TmdbClient {
 
     private final WebClient webClient;
+    private final ObjectMapper objectMapper;
 
     public TmdbClient(
         @Value("${tmdb.api.base-url}") String baseUrl,
-        @Value("${tmdb.api.key}") String apiKey
+        @Value("${tmdb.api.key}") String apiKey,
+        ObjectMapper objectMapper
     ) {
+        this.objectMapper = objectMapper;
+
         HttpClient httpClient = HttpClient.create().responseTimeout(
             Duration.ofSeconds(10)
         );
@@ -56,17 +65,18 @@ public class TmdbClient {
             .retrieve()
             .onStatus(
                 status -> status.value() == 404,
-                response -> Mono.error(
-                    new TmdbResourceNotFoundException(
-                        "Pelicula con id " + movieId + " no encontrada"
+                response ->
+                    Mono.error(
+                        new TmdbResourceNotFoundException(
+                            "Pelicula con id " + movieId + " no encontrada"
+                        )
                     )
-                )
             )
-            .onStatus(
-                HttpStatusCode::isError,
-                response -> Mono.error(
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
                     new ErrorFetchingMovieDetails(
-                        "Error al obtener detalles de la pelicula con id " + movieId
+                        "Error al obtener detalles de la pelicula con id " +
+                            movieId
                     )
                 )
             )
@@ -107,9 +117,8 @@ public class TmdbClient {
                     .build()
             )
             .retrieve()
-            .onStatus(
-                HttpStatusCode::isError,
-                response -> Mono.error(
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
                     new ErrorFetchingMovieList(
                         "Error al obtener lista de peliculas desde TMDB"
                     )
@@ -132,15 +141,15 @@ public class TmdbClient {
             .retrieve()
             .onStatus(
                 status -> status.value() == 404,
-                response -> Mono.error(
-                    new TmdbResourceNotFoundException(
-                        "Serie con id " + tvId + " no encontrada"
+                response ->
+                    Mono.error(
+                        new TmdbResourceNotFoundException(
+                            "Serie con id " + tvId + " no encontrada"
+                        )
                     )
-                )
             )
-            .onStatus(
-                HttpStatusCode::isError,
-                response -> Mono.error(
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
                     new ErrorFetchingTvDetails(
                         "Error al obtener detalles de la serie con id " + tvId
                     )
@@ -165,17 +174,24 @@ public class TmdbClient {
             .retrieve()
             .onStatus(
                 status -> status.value() == 404,
-                response -> Mono.error(
-                    new TmdbResourceNotFoundException(
-                        "Temporada " + seasonNumber + " de la serie " + tvId + " no encontrada"
+                response ->
+                    Mono.error(
+                        new TmdbResourceNotFoundException(
+                            "Temporada " +
+                                seasonNumber +
+                                " de la serie " +
+                                tvId +
+                                " no encontrada"
+                        )
                     )
-                )
             )
-            .onStatus(
-                HttpStatusCode::isError,
-                response -> Mono.error(
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
                     new ErrorFetchingTvDetails(
-                        "Error al obtener temporada " + seasonNumber + " de la serie " + tvId
+                        "Error al obtener temporada " +
+                            seasonNumber +
+                            " de la serie " +
+                            tvId
                     )
                 )
             )
@@ -209,14 +225,131 @@ public class TmdbClient {
                     .build()
             )
             .retrieve()
-            .onStatus(
-                HttpStatusCode::isError,
-                response -> Mono.error(
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
                     new ErrorFetchingTvList(
                         "Error al obtener lista de series desde TMDB"
                     )
                 )
             )
             .bodyToMono(TvListResponse.class);
+    }
+
+    // -----> Search <-----
+
+    public Mono<List<SearchResult>> search(
+        String query,
+        Integer year,
+        String mediaType,
+        String language
+    ) {
+        String path = switch (mediaType == null ? "multi" : mediaType) {
+            case "movie" -> "/search/movie";
+            case "tv" -> "/search/tv";
+            default -> "/search/multi";
+        };
+
+        return webClient
+            .get()
+            .uri(uriBuilder -> {
+                uriBuilder
+                    .path(path)
+                    .queryParam("query", query)
+                    .queryParam("language", language)
+                    .queryParam("include_adult", false);
+
+                if (year != null) {
+                    if ("tv".equals(mediaType)) {
+                        uriBuilder.queryParam("first_air_date_year", year);
+                    } else {
+                        uriBuilder.queryParam("year", year);
+                    }
+                }
+                return uriBuilder.build();
+            })
+            .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                response ->
+                    Mono.error(
+                        new TmdbResourceNotFoundException(
+                            "Resultados no encontrados para la búsqueda: " +
+                                query
+                        )
+                    )
+            )
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
+                    new RuntimeException(
+                        "Error al realizar la búsqueda en TMDB con la query: " +
+                            query
+                    )
+                )
+            )
+            .bodyToMono(String.class)
+            .map(jsonString -> {
+                try {
+                    JsonNode rootNode = objectMapper.readTree(jsonString);
+                    return mapResults(rootNode, mediaType);
+                } catch (Exception e) {
+                    throw new RuntimeException(
+                        "Error parseando respuesta de TMDB",
+                        e
+                    );
+                }
+            });
+    }
+
+    private List<SearchResult> mapResults(JsonNode json, String forcedType) {
+        List<SearchResult> out = new ArrayList<>();
+        JsonNode results = json.path("results");
+        if (!results.isArray()) return out;
+
+        for (JsonNode node : results) {
+            String type =
+                forcedType != null
+                    ? forcedType
+                    : node.path("media_type").asText(null);
+
+            if (type == null || type.equals("person")) continue;
+
+            String title = node.has("title")
+                ? node.path("title").asText(null)
+                : node.path("name").asText(null);
+
+            if (title == null) continue;
+
+            String date = node.has("release_date")
+                ? node.path("release_date").asText("")
+                : node.path("first_air_date").asText("");
+            Integer year = extractYear(date);
+
+            out.add(
+                new SearchResult(
+                    node.path("id").asLong(),
+                    title,
+                    emptyToNull(node.path("overview").asText("")),
+                    emptyToNull(node.path("poster_path").asText("")),
+                    type,
+                    year,
+                    node.path("popularity").asDouble(0),
+                    node.path("vote_average").asDouble(0)
+                )
+            );
+        }
+        return out;
+    }
+
+    private Integer extractYear(String date) {
+        if (date == null || date.length() < 4) return null;
+        try {
+            return Integer.parseInt(date.substring(0, 4));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String emptyToNull(String s) {
+        return s == null || s.isBlank() ? null : s;
     }
 }

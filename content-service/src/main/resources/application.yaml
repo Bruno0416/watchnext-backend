@@ -19,3 +19,29 @@ application:
   security:
     jwt:
       secret-key: ${JWT_SECRET}
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://admin:${EUREKA_ADMIN_PASSWD}@eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
+
+watchnext:
+  search:
+    cache-ttl-generic: 6h
+    cache-ttl-precise: 24h
+
+    spell:
+      enabled: true
+      max-edit-distance: 2
+      prefix-length: 7
+
+      dictionaries:
+        en: dictionaries/en-80k.txt
+        en-domain: dictionaries/watchnext_symspell_domain_en.txt
+        es: dictionaries/es-100l.txt
+        es-domain: dictionaries/watchnext_symspell_domain_es.txt
