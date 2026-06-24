@@ -55,12 +55,14 @@ public class UserList {
     private Instant updatedAt;
 
     public void addItem(ListItem item) {
+        // 1. vincular item a esta lista y asignar su posicion al final
         item.setList(this);
         item.setPosition(items.size());
         items.add(item);
     }
 
     public void removeItem(ListItem item) {
+        // 1. eliminar item de la lista y limpiar relacion bidireccional
         items.remove(item);
         item.setList(null);
     }

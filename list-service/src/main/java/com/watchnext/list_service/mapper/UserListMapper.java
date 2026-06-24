@@ -1,6 +1,7 @@
 package com.watchnext.list_service.mapper;
 
 import com.watchnext.common.dto.ContentRefResponse;
+import com.watchnext.common.dto.internal.ContentBasicDetail;
 import com.watchnext.list_service.dto.ListDetailResponse;
 import com.watchnext.list_service.dto.MyListsResponse;
 import com.watchnext.list_service.dto.UserListResponse;
@@ -25,15 +26,20 @@ public interface UserListMapper {
         if (entities == null) {
             return null;
         }
-        return MyListsResponse.builder()
-            .lists(toResponseList(entities))
-            .build();
+        return new MyListsResponse(toResponseList(entities));
     }
 
     // 2. Mapeos para vistas detalladas (ListDetailResponse)
+    @Mapping(target = "items", ignore = true)
     ListDetailResponse toDetailResponse(UserList entity);
 
     @Mapping(target = "tmdbId", source = "content.tmdbId")
     @Mapping(target = "mediaType", source = "content.mediaType")
     ContentRefResponse listItemToContentRefResponse(ListItem item);
+
+    @Mapping(target = "items", source = "contents")
+    ListDetailResponse toDetailResponse(
+        UserList entity,
+        List<ContentBasicDetail> contents
+    );
 }

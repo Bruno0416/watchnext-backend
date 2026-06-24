@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Validated
@@ -73,8 +74,9 @@ public class ListController {
     // 6. detalle lista
     @GetMapping("/{listId}")
     public ResponseEntity<ListDetailResponse> getListDetails(
-        @PathVariable UUID listId
+        @PathVariable UUID listId,
+        @RequestParam(defaultValue = "en-US") String language
     ) {
-        return ResponseEntity.ok(service.getListDetails(listId));
+        return ResponseEntity.ok(service.getListDetails(listId, language));
     }
 }
