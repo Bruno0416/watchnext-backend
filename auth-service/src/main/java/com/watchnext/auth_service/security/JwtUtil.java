@@ -54,10 +54,10 @@ public class JwtUtil {
     public String generateToken(Users user) {
         // agregar extra claims (datos del usuario) para no requerir un endpoint extra
         Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("id", user.getId());
-        extraClaims.put("name", user.getUsername());
+        extraClaims.put("id", user.getId().toString());
+        extraClaims.put("name", user.getEmail());
         extraClaims.put("email", user.getEmail());
-        extraClaims.put("role", user.getRole());
+        extraClaims.put("role", user.getRole().name());
         /*
             Guardamos los datos del usuario en el token usando los extraClaims
             para poder extraerlos en el resto de microservicios sin tener que comunicarnos directamente con Auth.
