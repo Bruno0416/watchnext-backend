@@ -15,7 +15,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // Inyectamos el proveedor que creaste en ApplicationConfig
     private final AuthenticationProvider authenticationProvider;
 
     @Bean
