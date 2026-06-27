@@ -12,7 +12,7 @@ import com.watchnext.content_service.exceptions.ErrorFetchingMovieDetails;
 import com.watchnext.content_service.exceptions.ErrorFetchingMovieList;
 import com.watchnext.content_service.exceptions.ErrorFetchingTvDetails;
 import com.watchnext.content_service.exceptions.ErrorFetchingTvList;
-import com.watchnext.content_service.exceptions.TmdbResourceNotFoundException;
+import com.watchnext.content_service.exceptions.TmdbResourceNotFound;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,7 +67,7 @@ public class TmdbClient {
                 status -> status.value() == 404,
                 response ->
                     Mono.error(
-                        new TmdbResourceNotFoundException(
+                        new TmdbResourceNotFound(
                             "Pelicula con id " + movieId + " no encontrada"
                         )
                     )
@@ -143,7 +143,7 @@ public class TmdbClient {
                 status -> status.value() == 404,
                 response ->
                     Mono.error(
-                        new TmdbResourceNotFoundException(
+                        new TmdbResourceNotFound(
                             "Serie con id " + tvId + " no encontrada"
                         )
                     )
@@ -176,7 +176,7 @@ public class TmdbClient {
                 status -> status.value() == 404,
                 response ->
                     Mono.error(
-                        new TmdbResourceNotFoundException(
+                        new TmdbResourceNotFound(
                             "Temporada " +
                                 seasonNumber +
                                 " de la serie " +
@@ -272,7 +272,7 @@ public class TmdbClient {
                 status -> status.value() == 404,
                 response ->
                     Mono.error(
-                        new TmdbResourceNotFoundException(
+                        new TmdbResourceNotFound(
                             "Resultados no encontrados para la búsqueda: " +
                                 query
                         )
