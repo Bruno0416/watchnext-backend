@@ -5,7 +5,7 @@ import com.watchnext.auth_service.dto.LoginRequest;
 import com.watchnext.auth_service.dto.RegisterRequest;
 
 public interface AuthService {
-    AuthResponse register(RegisterRequest request);
+    void register(RegisterRequest request);
 
     AuthResponse login(LoginRequest request);
 

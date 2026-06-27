@@ -5,9 +5,9 @@ import com.watchnext.auth_service.dto.LoginRequest;
 import com.watchnext.auth_service.dto.RegisterRequest;
 import com.watchnext.auth_service.entity.Role;
 import com.watchnext.auth_service.entity.Users;
-import com.watchnext.auth_service.exceptions.EmailAlreadyInUseException;
-import com.watchnext.auth_service.exceptions.InvalidCredentialsException;
-import com.watchnext.auth_service.exceptions.InvalidRefreshTokenException;
+import com.watchnext.auth_service.exceptions.EmailAlreadyInUse;
+import com.watchnext.auth_service.exceptions.InvalidCredentials;
+import com.watchnext.auth_service.exceptions.InvalidRefreshToken;
 import com.watchnext.auth_service.repository.UserRepository;
 import com.watchnext.auth_service.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -26,14 +26,14 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authManager;
 
     @Override
-    public AuthResponse register(RegisterRequest request) {
+    public void register(RegisterRequest request) {
         // 1. validar si el usuario ya tiene cuenta
         if (repo.existsByEmail(request.email())) {
-            throw new EmailAlreadyInUseException(request.email());
+            throw new EmailAlreadyInUse(request.email());
         }
 
-        // 2. construir entidad usuasrio
-        Users user = repo.save(
+        // 2. registrar usuario
+        repo.save(
             Users.builder()
                 .username(request.username())
                 .email(request.email())
@@ -41,12 +41,6 @@ public class AuthServiceImpl implements AuthService {
                 .role(Role.USER)
                 .build()
         );
-
-        // 3. generar tokens
-        String accessToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-
-        return new AuthResponse(accessToken, refreshToken);
     }
 
     @Override
@@ -60,14 +54,14 @@ public class AuthServiceImpl implements AuthService {
                 )
             );
         } catch (Exception e) {
-            throw new InvalidCredentialsException("Credenciales invalidas");
+            throw new InvalidCredentials("Credenciales invalidas");
         }
 
         // 2. buscar usuario en el repo
         Users user = repo
             .findByEmail(request.email())
             .orElseThrow(() ->
-                new InvalidCredentialsException("Credenciales invalidas")
+                new InvalidCredentials("Credenciales invalidas")
             );
 
         // 3. generar tokens y retornar
@@ -86,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
             Users user = repo
                 .findByEmail(email)
                 .orElseThrow(() ->
-                    new InvalidCredentialsException("Credentials are invalid")
+                    new InvalidCredentials("Credentials are invalid")
                 );
 
             if (jwtService.isTokenValid(refreshToken, user)) {
@@ -96,6 +90,6 @@ public class AuthServiceImpl implements AuthService {
                 return new AuthResponse(newAccessToken, newRefreshToken);
             }
         }
-        throw new InvalidRefreshTokenException("Invalid refresh token");
+        throw new InvalidRefreshToken("Invalid refresh token");
     }
 }
