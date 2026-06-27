@@ -38,6 +38,8 @@ services:
         condition: service_started
       list-service:
         condition: service_started
+      feedback-service:
+        condition: service_started
       eureka-server:
         condition: service_healthy
     env_file: .env
@@ -52,8 +54,8 @@ services:
       context: .
       dockerfile: auth-service/Dockerfile
     container_name: watch_next_auth
-    ports:
-      - "8081:8081"
+    # ports:
+    #   - "8081:8081"
     env_file: .env
     depends_on:
       eureka-server:
@@ -67,8 +69,8 @@ services:
       context: .
       dockerfile: content-service/Dockerfile
     container_name: watch_next_content
-    ports:
-      - "8082:8082"
+    # ports:
+    #   - "8082:8082"
     env_file: .env
     depends_on:
       redis:
@@ -87,7 +89,7 @@ services:
     networks:
       - watch_next-network
 
-    # ---- LISTS ----
+  # ---- LISTS ----
   list-service:
     build:
       context: .
@@ -97,8 +99,23 @@ services:
     depends_on:
       eureka-server:
         condition: service_healthy
-    ports:
-      - "8083:8083"
+    # ports:
+    #   - "8083:8083"
+    networks:
+      - watch_next-network
+
+  # ---- FEEDBACK ----
+  feedback-service:
+    build:
+      context: .
+      dockerfile: feedback-service/Dockerfile
+    container_name: watch_next_feedback
+    env_file: .env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    # ports:
+    #   - "8084:8084"
     networks:
       - watch_next-network
 

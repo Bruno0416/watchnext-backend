@@ -76,6 +76,7 @@
         <module>auth-service</module>
         <module>content-service</module>
         <module>list-service</module>
+        <module>feedback-service</module>
         <module>gateway</module>
         <module>eureka-server</module>
     </modules>
