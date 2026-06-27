@@ -2,6 +2,7 @@ package com.watchnext.content_service.controller.tv;
 
 import com.watchnext.content_service.dto.tv.TvDetails;
 import com.watchnext.content_service.dto.tv.TvListResponse;
+import com.watchnext.content_service.dto.tv.TvSeasonDetail;
 import com.watchnext.content_service.service.content.ContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ public class SeriesController {
 
     private final ContentService contentService;
 
-    // 1. obtener detalles de serie especifica
+    // 1. obtener detalles de serie especifica (con cast y videos)
     @GetMapping("/{id}")
     public Mono<ResponseEntity<TvDetails>> getTvDetails(
         @PathVariable Integer id,
@@ -62,5 +63,18 @@ public class SeriesController {
         return contentService
             .getTopRatedTv(page, language)
             .map(ResponseEntity::ok);
+    }
+
+    // 5. obtener episodios de una temporada especifica
+    @GetMapping("/{id}/season/{seasonNumber}")
+    public Mono<ResponseEntity<TvSeasonDetail>> getTvSeasonDetail(
+        @PathVariable Integer id,
+        @PathVariable Integer seasonNumber,
+        @RequestParam(defaultValue = "en-US") String language
+    ) {
+        return contentService
+            .getTvSeasonDetail(id, seasonNumber, language)
+            .map(ResponseEntity::ok)
+            .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }

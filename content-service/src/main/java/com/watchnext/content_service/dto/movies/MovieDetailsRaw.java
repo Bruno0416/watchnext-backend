@@ -1,18 +1,19 @@
 package com.watchnext.content_service.dto.movies;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.watchnext.content_service.dto.common.CastMember;
+import com.watchnext.content_service.dto.common.Credits;
 import com.watchnext.content_service.dto.common.Genre;
-import com.watchnext.content_service.dto.common.Video;
+import com.watchnext.content_service.dto.common.VideoWrapper;
 import java.util.List;
 
 /**
- * Enriched movie detail returned to API clients.
- * cast is trimmed to top 15 (ordered by TMDB order).
- * videos contains only YouTube entries, sorted Trailer → Teaser → rest,
- * with official entries first within each type.
+ * Internal DTO that mirrors the raw TMDB response for
+ * GET /movie/{id}?append_to_response=credits,videos.
+ *
+ * This is NOT what the API exposes. ContentServiceImpl maps this to MovieDetails
+ * after trimming cast and normalizing videos.
  */
-public record MovieDetails(
+public record MovieDetailsRaw(
     Integer id,
     String title,
     @JsonProperty("original_title") String originalTitle,
@@ -24,6 +25,6 @@ public record MovieDetails(
     @JsonProperty("vote_average") Double voteAverage,
     @JsonProperty("vote_count") Integer voteCount,
     List<Genre> genres,
-    List<CastMember> cast,
-    List<Video> videos
+    Credits credits,
+    VideoWrapper videos
 ) {}

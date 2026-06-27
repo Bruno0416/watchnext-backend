@@ -2,12 +2,12 @@ package com.watchnext.content_service.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.watchnext.content_service.dto.movies.MovieDetails;
+import com.watchnext.content_service.dto.movies.MovieDetailsRaw;
 import com.watchnext.content_service.dto.movies.MovieListResponse;
 import com.watchnext.content_service.dto.search.SearchResult;
-import com.watchnext.content_service.dto.tv.TvDetails;
+import com.watchnext.content_service.dto.tv.TvDetailsRaw;
 import com.watchnext.content_service.dto.tv.TvListResponse;
-import com.watchnext.content_service.dto.tv.TvSeason;
+import com.watchnext.content_service.dto.tv.TvSeasonDetail;
 import com.watchnext.content_service.exceptions.ErrorFetchingMovieDetails;
 import com.watchnext.content_service.exceptions.ErrorFetchingMovieList;
 import com.watchnext.content_service.exceptions.ErrorFetchingTvDetails;
@@ -50,7 +50,7 @@ public class TmdbClient {
 
     // -----> Movies <-----
 
-    public Mono<MovieDetails> getMovieDetails(
+    public Mono<MovieDetailsRaw> getMovieDetails(
         Integer movieId,
         String language
     ) {
@@ -59,6 +59,7 @@ public class TmdbClient {
             .uri(uriBuilder ->
                 uriBuilder
                     .path("/movie/{id}")
+                    .queryParam("append_to_response", "credits,videos")
                     .queryParam("language", language)
                     .build(movieId)
             )
@@ -80,7 +81,7 @@ public class TmdbClient {
                     )
                 )
             )
-            .bodyToMono(MovieDetails.class);
+            .bodyToMono(MovieDetailsRaw.class);
     }
 
     public Mono<MovieListResponse> getNowPlaying(
@@ -129,12 +130,13 @@ public class TmdbClient {
 
     // -----> TV Series <-----
 
-    public Mono<TvDetails> getTvDetails(Integer tvId, String language) {
+    public Mono<TvDetailsRaw> getTvDetails(Integer tvId, String language) {
         return webClient
             .get()
             .uri(uriBuilder ->
                 uriBuilder
                     .path("/tv/{id}")
+                    .queryParam("append_to_response", "credits,videos")
                     .queryParam("language", language)
                     .build(tvId)
             )
@@ -155,10 +157,10 @@ public class TmdbClient {
                     )
                 )
             )
-            .bodyToMono(TvDetails.class);
+            .bodyToMono(TvDetailsRaw.class);
     }
 
-    public Mono<TvSeason> getTvSeason(
+    public Mono<TvSeasonDetail> getTvSeason(
         Integer tvId,
         Integer seasonNumber,
         String language
@@ -195,7 +197,7 @@ public class TmdbClient {
                     )
                 )
             )
-            .bodyToMono(TvSeason.class);
+            .bodyToMono(TvSeasonDetail.class);
     }
 
     public Mono<TvListResponse> getOnTheAirTv(Integer page, String language) {

@@ -1,11 +1,19 @@
 package com.watchnext.content_service.service.content;
 
 import com.watchnext.content_service.client.TmdbClient;
+import com.watchnext.content_service.dto.common.CastMember;
+import com.watchnext.content_service.dto.common.Video;
 import com.watchnext.content_service.dto.movies.MovieDetails;
+import com.watchnext.content_service.dto.movies.MovieDetailsRaw;
 import com.watchnext.content_service.dto.movies.MovieListResponse;
 import com.watchnext.content_service.dto.tv.TvDetails;
+import com.watchnext.content_service.dto.tv.TvDetailsRaw;
 import com.watchnext.content_service.dto.tv.TvListResponse;
+import com.watchnext.content_service.dto.tv.TvSeasonDetail;
+import com.watchnext.content_service.util.ContentEnrichment;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -28,12 +36,62 @@ public class ContentServiceImpl implements ContentService {
         Integer movieId,
         String language
     ) {
-        // 1. obtener detalles de pelicula buscando en cache o realizando la peticion a tmdb
         return cacheOrFetch(
             "movie:details:" + movieId + ":" + language,
             MovieDetails.class,
             DETAILS_TIME,
-            tmdbClient.getMovieDetails(movieId, language)
+            fetchEnrichedMovie(movieId, language)
+        );
+    }
+
+    private Mono<MovieDetails> fetchEnrichedMovie(
+        Integer movieId,
+        String language
+    ) {
+        return tmdbClient.getMovieDetails(movieId, language).flatMap(raw -> {
+            List<CastMember> cast = ContentEnrichment.trimCast(
+                castFrom(raw.credits())
+            );
+            List<Video> videos = ContentEnrichment.normalizeVideos(
+                videosFrom(raw.videos())
+            );
+
+            if (videos.isEmpty() && !isEnglish(language)) {
+                return tmdbClient
+                    .getMovieDetails(movieId, "en-US")
+                    .map(fallback ->
+                        buildMovieDetails(
+                            raw,
+                            cast,
+                            ContentEnrichment.normalizeVideos(
+                                videosFrom(fallback.videos())
+                            )
+                        )
+                    );
+            }
+            return Mono.just(buildMovieDetails(raw, cast, videos));
+        });
+    }
+
+    private static MovieDetails buildMovieDetails(
+        MovieDetailsRaw raw,
+        List<CastMember> cast,
+        List<Video> videos
+    ) {
+        return new MovieDetails(
+            raw.id(),
+            raw.title(),
+            raw.originalTitle(),
+            raw.overview(),
+            raw.posterPath(),
+            raw.backdropPath(),
+            raw.releaseDate(),
+            raw.runtime(),
+            raw.voteAverage(),
+            raw.voteCount(),
+            raw.genres(),
+            cast,
+            videos
         );
     }
 
@@ -42,7 +100,6 @@ public class ContentServiceImpl implements ContentService {
         Integer page,
         String language
     ) {
-        // 1. obtener peliculas en cartelera buscando en cache o tmdb
         return cacheOrFetch(
             "movie:now_playing:" + page + ":" + language,
             MovieListResponse.class,
@@ -56,7 +113,6 @@ public class ContentServiceImpl implements ContentService {
         Integer page,
         String language
     ) {
-        // 1. obtener peliculas populares buscando en cache o tmdb
         return cacheOrFetch(
             "movie:popular:" + page + ":" + language,
             MovieListResponse.class,
@@ -95,12 +151,60 @@ public class ContentServiceImpl implements ContentService {
 
     @Override
     public Mono<TvDetails> getTvDetails(Integer tvId, String language) {
-        // 1. obtener detalles de serie buscando en cache o realizando peticion a tmdb
         return cacheOrFetch(
             "tv:details:" + tvId + ":" + language,
             TvDetails.class,
             DETAILS_TIME,
-            tmdbClient.getTvDetails(tvId, language)
+            fetchEnrichedTv(tvId, language)
+        );
+    }
+
+    private Mono<TvDetails> fetchEnrichedTv(Integer tvId, String language) {
+        return tmdbClient.getTvDetails(tvId, language).flatMap(raw -> {
+            List<CastMember> cast = ContentEnrichment.trimCast(
+                castFrom(raw.credits())
+            );
+            List<Video> videos = ContentEnrichment.normalizeVideos(
+                videosFrom(raw.videos())
+            );
+
+            if (videos.isEmpty() && !isEnglish(language)) {
+                return tmdbClient
+                    .getTvDetails(tvId, "en-US")
+                    .map(fallback ->
+                        buildTvDetails(
+                            raw,
+                            cast,
+                            ContentEnrichment.normalizeVideos(
+                                videosFrom(fallback.videos())
+                            )
+                        )
+                    );
+            }
+            return Mono.just(buildTvDetails(raw, cast, videos));
+        });
+    }
+
+    private static TvDetails buildTvDetails(
+        TvDetailsRaw raw,
+        List<CastMember> cast,
+        List<Video> videos
+    ) {
+        return new TvDetails(
+            raw.id(),
+            raw.name(),
+            raw.overview(),
+            raw.posterPath(),
+            raw.backdropPath(),
+            raw.firstAirDate(),
+            raw.voteAverage(),
+            raw.numberOfEpisodes(),
+            raw.numberOfSeasons(),
+            raw.status(),
+            raw.genres(),
+            raw.seasons(),
+            cast,
+            videos
         );
     }
 
@@ -134,7 +238,44 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
-    // Helper method
+    @Override
+    public Mono<TvSeasonDetail> getTvSeasonDetail(
+        Integer tvId,
+        Integer seasonNumber,
+        String language
+    ) {
+        return cacheOrFetch(
+            "tv:season:" + tvId + ":" + seasonNumber + ":" + language,
+            TvSeasonDetail.class,
+            DETAILS_TIME,
+            tmdbClient.getTvSeason(tvId, seasonNumber, language)
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    private boolean isEnglish(String language) {
+        return language == null || language.startsWith("en");
+    }
+
+    private List<CastMember> castFrom(
+        com.watchnext.content_service.dto.common.Credits credits
+    ) {
+        return credits == null || credits.cast() == null
+            ? Collections.emptyList()
+            : credits.cast();
+    }
+
+    private List<Video> videosFrom(
+        com.watchnext.content_service.dto.common.VideoWrapper videos
+    ) {
+        return videos == null || videos.results() == null
+            ? Collections.emptyList()
+            : videos.results();
+    }
+
     private <T> Mono<T> cacheOrFetch(
         String cacheKey,
         Class<T> type,

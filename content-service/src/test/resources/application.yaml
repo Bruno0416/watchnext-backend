@@ -13,3 +13,9 @@ application:
       secret-key: "clave-secreta-falsa-solo-para-entorno-de-pruebas"
       access-token:
         expiration: 86400000
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379

@@ -1,18 +1,19 @@
 package com.watchnext.content_service.dto.tv;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.watchnext.content_service.dto.common.CastMember;
+import com.watchnext.content_service.dto.common.Credits;
 import com.watchnext.content_service.dto.common.Genre;
-import com.watchnext.content_service.dto.common.Video;
+import com.watchnext.content_service.dto.common.VideoWrapper;
 import java.util.List;
 
 /**
- * Enriched TV series detail returned to API clients.
- * cast is trimmed to top 15 (ordered by TMDB order).
- * videos contains only YouTube entries, sorted Trailer → Teaser → rest.
- * seasons is a summary list WITHOUT episodes (see /tv/{id}/season/{n} for episodes).
+ * Internal DTO that mirrors the raw TMDB response for
+ * GET /tv/{id}?append_to_response=credits,videos.
+ *
+ * This is NOT what the API exposes. ContentServiceImpl maps this to TvDetails
+ * after trimming cast and normalizing videos.
  */
-public record TvDetails(
+public record TvDetailsRaw(
     Integer id,
     String name,
     String overview,
@@ -25,6 +26,6 @@ public record TvDetails(
     String status,
     List<Genre> genres,
     List<TvSeason> seasons,
-    List<CastMember> cast,
-    List<Video> videos
+    Credits credits,
+    VideoWrapper videos
 ) {}
