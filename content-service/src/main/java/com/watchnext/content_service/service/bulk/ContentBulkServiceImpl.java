@@ -3,13 +3,11 @@ package com.watchnext.content_service.service.bulk;
 import com.watchnext.common.dto.ContentRefRequest;
 import com.watchnext.common.dto.internal.ContentBasicDetail;
 import com.watchnext.common.model.MediaType;
-import com.watchnext.content_service.client.TmdbClient;
 import com.watchnext.content_service.dto.movies.MovieDetails;
 import com.watchnext.content_service.dto.tv.TvDetails;
-import java.time.Duration;
+import com.watchnext.content_service.service.content.ContentService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,11 +16,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ContentBulkServiceImpl implements ContentBulkService {
 
-    private static final Duration DETAILS_TIME = Duration.ofHours(24);
     private static final int CONCURRENCY = 8; // tope para no pasar el rate limit de TMDB
 
-    private final TmdbClient tmdbClient;
-    private final ReactiveRedisTemplate<String, Object> redisTemplate;
+    private final ContentService contentService;
 
     @Override
     public Mono<List<ContentBasicDetail>> fetchBulkContent(
@@ -43,27 +39,14 @@ public class ContentBulkServiceImpl implements ContentBulkService {
     ) {
         Integer id = ref.tmdbId().intValue();
 
-        // 1. procesar busqueda segun el tipo de contenido
         if (ref.mediaType() == MediaType.MOVIE) {
-            String key = "content:movie:" + id + ":" + language;
-            // 2. buscar pelicula en cache o tmdb y mapear a objeto basico
-            return cacheOrFetch(
-                key,
-                MovieDetails.class,
-                DETAILS_TIME,
-                tmdbClient.getMovieDetails(id, language)
-            )
+            return contentService
+                .getMovieDetails(id, language)
                 .map(this::toBasic)
                 .onErrorResume(e -> Mono.empty());
         } else {
-            String key = "content:tv:" + id + ":" + language;
-            // 2. buscar serie en cache o tmdb y mapear a objeto basico
-            return cacheOrFetch(
-                key,
-                TvDetails.class,
-                DETAILS_TIME,
-                tmdbClient.getTvDetails(id, language)
-            )
+            return contentService
+                .getTvDetails(id, language)
                 .map(this::toBasic)
                 .onErrorResume(e -> Mono.empty());
         }
@@ -93,29 +76,5 @@ public class ContentBulkServiceImpl implements ContentBulkService {
             null,
             t.numberOfSeasons()
         );
-    }
-
-    private <T> Mono<T> cacheOrFetch(
-        String cacheKey,
-        Class<T> type,
-        Duration ttl,
-        Mono<T> fetch
-    ) {
-        // 1. intentar leer desde cache
-        return redisTemplate
-            .opsForValue()
-            .get(cacheKey)
-            .cast(type)
-            .onErrorResume(e -> Mono.empty())
-            .switchIfEmpty(
-                // 2. si falla o no existe, hacer peticion y cachear
-                fetch.flatMap(value ->
-                    redisTemplate
-                        .opsForValue()
-                        .set(cacheKey, value, ttl)
-                        .onErrorComplete()
-                        .thenReturn(value)
-                )
-            );
     }
 }
