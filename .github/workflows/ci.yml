@@ -14,6 +14,9 @@ jobs:
       auth: ${{ steps.filter.outputs.auth }}
       content: ${{ steps.filter.outputs.content }}
       list: ${{ steps.filter.outputs.list }}
+      feedback: ${{ steps.filter.outputs.feedback }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      eureka: ${{ steps.filter.outputs.eureka }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -32,6 +35,21 @@ jobs:
               - '.github/workflows/ci.yml'
             list:
               - 'list-service/**'
+              - 'common/**'
+              - 'pom.xml'
+              - '.github/workflows/ci.yml'
+            feedback:
+              - 'feedback-service/**'
+              - 'common/**'
+              - 'pom.xml'
+              - '.github/workflows/ci.yml'
+            gateway:
+              - 'gateway/**'
+              - 'common/**'
+              - 'pom.xml'
+              - '.github/workflows/ci.yml'
+            eureka:
+              - 'eureka-server/**'
               - 'common/**'
               - 'pom.xml'
               - '.github/workflows/ci.yml'
@@ -92,3 +110,60 @@ jobs:
         run: ./mvnw install -N
       - name: Compilar List Service
         run: ./mvnw -pl list-service -am package
+
+  # 5. Compila Feedback Service (Solo si hubo cambios)
+  build-feedback:
+    needs: changes
+    if: ${{ needs.changes.outputs.feedback == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N
+      - name: Compilar Feedback Service
+        run: ./mvnw -pl feedback-service -am package
+
+  # 6. Compila Gateway (Solo si hubo cambios)
+  build-gateway:
+    needs: changes
+    if: ${{ needs.changes.outputs.gateway == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N
+      - name: Compilar Gateway
+        run: ./mvnw -pl gateway -am package
+
+  # 7. Compila Eureka Server (Solo si hubo cambios)
+  build-eureka:
+    needs: changes
+    if: ${{ needs.changes.outputs.eureka == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N
+      - name: Compilar Eureka Server
+        run: ./mvnw -pl eureka-server -am package
