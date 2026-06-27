@@ -11,6 +11,8 @@ COPY feedback-service/pom.xml feedback-service/
 COPY gateway/pom.xml gateway/
 COPY eureka-server/pom.xml eureka-server/
 
+COPY settings.xml /root/.m2/settings.xml
+
 # cachea dependencias de auth-service y sus deps (common)
 RUN mvn -pl auth-service -am dependency:go-offline -q
 
