@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=none
 server:
   port: 8080
 
@@ -28,6 +27,10 @@ spring:
               uri: lb://list-service
               predicates:
                 - Path=/api/v1/list/**
+            - id: feedback-service
+              uri: lb://feedback-service
+              predicates:
+                - Path=/api/v1/feedback/**
 
 application:
   security:
