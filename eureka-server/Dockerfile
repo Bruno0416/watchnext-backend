@@ -7,19 +7,18 @@ COPY common/pom.xml common/
 COPY auth-service/pom.xml auth-service/
 COPY content-service/pom.xml content-service/
 COPY list-service/pom.xml list-service/
+COPY feedback-service/pom.xml feedback-service/
 COPY gateway/pom.xml gateway/
 COPY eureka-server/pom.xml eureka-server/
 
-# Instala el POM raiz en el cache local de Maven dentro de Docker
-RUN --mount=type=cache,target=/root/.m2 mvn -N install -q
+# cachea dependencias de eureka-server y sus deps (common)
+RUN mvn -pl eureka-server -am dependency:go-offline -q
 
-# cachea dependencias de eureka-server y sus deps
-RUN --mount=type=cache,target=/root/.m2 mvn -pl eureka-server -am dependency:go-offline -q
-
-# codigo fuente del modulo
+# codigo fuente de los modulos necesarios
+COPY common/src common/src
 COPY eureka-server/src eureka-server/src
 
-RUN --mount=type=cache,target=/root/.m2 mvn -pl eureka-server -am package
+RUN mvn -pl eureka-server -am package
 
 FROM eclipse-temurin:21-jre-alpine
 RUN apk add --no-cache wget
