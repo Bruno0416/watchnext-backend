@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -35,7 +36,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String path = request.getRequestURI();
 
-        if (!path.startsWith("/api/v1/auth")) {
+        // 1. definir rutas publicas
+        List<String> publicPaths = List.of("/api/v1/auth", "/api/v1/content");
+
+        // 2. validar si la ruta empieza con alguna de las rutas publicas
+        boolean isPublicPath = publicPaths
+            .stream()
+            .anyMatch(publicPath -> path.startsWith(publicPath));
+
+        if (!isPublicPath) {
             try {
                 String token;
                 String authHeader = request.getHeader(
