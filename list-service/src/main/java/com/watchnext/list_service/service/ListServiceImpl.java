@@ -13,9 +13,9 @@ import com.watchnext.list_service.dto.ListDetailResponse;
 import com.watchnext.list_service.dto.MyListsResponse;
 import com.watchnext.list_service.entity.ListItem;
 import com.watchnext.list_service.entity.UserList;
-import com.watchnext.list_service.exceptions.ItemAlreadyExistsException;
-import com.watchnext.list_service.exceptions.ListAlreadyExistsException;
-import com.watchnext.list_service.exceptions.ListNotFoundException;
+import com.watchnext.list_service.exceptions.ItemAlreadyExists;
+import com.watchnext.list_service.exceptions.ListAlreadyExists;
+import com.watchnext.list_service.exceptions.ListNotFound;
 import com.watchnext.list_service.mapper.ContentRefMapper;
 import com.watchnext.list_service.mapper.UserListMapper;
 import com.watchnext.list_service.repository.ListItemRepository;
@@ -53,7 +53,7 @@ public class ListServiceImpl implements ListService {
         listRepo
             .findByUserIdAndName(user.id(), request.name())
             .ifPresent(existingList -> {
-                throw new ListAlreadyExistsException(
+                throw new ListAlreadyExists(
                     "Ya existe una lista con el nombre: " + request.name()
                 );
             });
@@ -84,9 +84,7 @@ public class ListServiceImpl implements ListService {
 
         UserList list = listRepo
             .findByUserIdAndId(user.id(), listId)
-            .orElseThrow(() ->
-                new ListNotFoundException("Lista no encontrada")
-            );
+            .orElseThrow(() -> new ListNotFound("Lista no encontrada"));
 
         // 2. agregar items a la lista
         record ItemKey(Integer tmdbId, MediaType mediaType) {}
@@ -117,7 +115,7 @@ public class ListServiceImpl implements ListService {
 
         // 5. Si la lista original tenia items, pero despues de filtrar quedo vacia
         if (itemsToAdd.isEmpty() && !request.items().isEmpty()) {
-            throw new ItemAlreadyExistsException(
+            throw new ItemAlreadyExists(
                 "Todos los contenidos enviados ya están en la lista"
             );
         }
@@ -143,7 +141,7 @@ public class ListServiceImpl implements ListService {
 
         if (
             !listRepo.existsByUserIdAndId(user.id(), listId)
-        ) throw new ListNotFoundException();
+        ) throw new ListNotFound();
 
         // 2. mapear dto a lista de objetos
         List<ContentRef> contentsToRemove = contentRefMapper.toModelList(
@@ -162,7 +160,7 @@ public class ListServiceImpl implements ListService {
         // 2. eliminar lista
         int deletedRows = listRepo.deleteByIdAndUserIdMatch(listId, user.id());
         if (deletedRows == 0) {
-            throw new ListNotFoundException();
+            throw new ListNotFound();
         }
     }
 
@@ -183,7 +181,7 @@ public class ListServiceImpl implements ListService {
         // 2. obtener lista
         UserList list = listRepo
             .findByUserIdAndId(user.id(), listId)
-            .orElseThrow(ListNotFoundException::new);
+            .orElseThrow(ListNotFound::new);
 
         // 3. obtener detalles de los items
         List<ContentRefRequest> requests = list
