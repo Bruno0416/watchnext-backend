@@ -52,7 +52,7 @@ class ReviewControllerTest {
         // 1. preparar request
         var request = new ReviewRequest(
             1,
-            com.watchnext.common.model.MediaType.MOVIE,
+            com.watchnext.common.enums.MediaType.MOVIE,
             "Excelente película"
         );
         doNothing().when(service).createReview(any());
@@ -73,7 +73,7 @@ class ReviewControllerTest {
         // 1. preparar request (body vacío)
         var request = new ReviewRequest(
             1,
-            com.watchnext.common.model.MediaType.MOVIE,
+            com.watchnext.common.enums.MediaType.MOVIE,
             ""
         );
 
@@ -93,7 +93,7 @@ class ReviewControllerTest {
         // 1. preparar request
         var request = new ReviewRequest(
             1,
-            com.watchnext.common.model.MediaType.MOVIE,
+            com.watchnext.common.enums.MediaType.MOVIE,
             "Excelente película"
         );
         doThrow(new ReviewAlreadyExists()).when(service).createReview(any());
@@ -119,7 +119,7 @@ class ReviewControllerTest {
                 UUID.randomUUID(),
                 "user-id",
                 1,
-                com.watchnext.common.model.MediaType.MOVIE,
+                com.watchnext.common.enums.MediaType.MOVIE,
                 "Excelente",
                 Instant.now(),
                 Instant.now()

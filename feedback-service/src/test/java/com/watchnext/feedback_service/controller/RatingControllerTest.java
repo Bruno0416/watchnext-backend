@@ -50,7 +50,7 @@ class RatingControllerTest {
         // 1. preparar request
         var request = new RatingRequest(
             1,
-            com.watchnext.common.model.MediaType.MOVIE,
+            com.watchnext.common.enums.MediaType.MOVIE,
             8.5
         );
         doNothing().when(service).create(any());
@@ -71,7 +71,7 @@ class RatingControllerTest {
         // 1. preparar request (tmdbId nulo)
         var request = new RatingRequest(
             null,
-            com.watchnext.common.model.MediaType.MOVIE,
+            com.watchnext.common.enums.MediaType.MOVIE,
             8.5
         );
 
@@ -91,7 +91,7 @@ class RatingControllerTest {
         // 1. preparar request (score nulo)
         var request = new RatingRequest(
             1,
-            com.watchnext.common.model.MediaType.MOVIE,
+            com.watchnext.common.enums.MediaType.MOVIE,
             null
         );
 
@@ -111,7 +111,7 @@ class RatingControllerTest {
         // 1. preparar request
         var request = new RatingRequest(
             1,
-            com.watchnext.common.model.MediaType.MOVIE,
+            com.watchnext.common.enums.MediaType.MOVIE,
             8.5
         );
         doThrow(new RatingAlreadyExists()).when(service).create(any());
@@ -136,7 +136,7 @@ class RatingControllerTest {
             new RatingResponse(
                 UUID.randomUUID(),
                 1,
-                com.watchnext.common.model.MediaType.MOVIE,
+                com.watchnext.common.enums.MediaType.MOVIE,
                 8.5,
                 Instant.now(),
                 Instant.now()
@@ -160,7 +160,7 @@ class RatingControllerTest {
         var response = new RatingResponse(
             UUID.randomUUID(),
             1,
-            com.watchnext.common.model.MediaType.MOVIE,
+            com.watchnext.common.enums.MediaType.MOVIE,
             8.5,
             Instant.now(),
             Instant.now()

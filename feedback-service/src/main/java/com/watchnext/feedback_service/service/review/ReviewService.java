@@ -1,6 +1,6 @@
 package com.watchnext.feedback_service.service.review;
 
-import com.watchnext.common.model.MediaType;
+import com.watchnext.common.enums.MediaType;
 import com.watchnext.feedback_service.dto.review.ReviewRequest;
 import com.watchnext.feedback_service.dto.review.ReviewResponse;
 import com.watchnext.feedback_service.dto.review.ReviewUpdateRequest;

@@ -1,6 +1,6 @@
 package com.watchnext.feedback_service.dto.review;
 
-import com.watchnext.common.model.MediaType;
+import com.watchnext.common.enums.MediaType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

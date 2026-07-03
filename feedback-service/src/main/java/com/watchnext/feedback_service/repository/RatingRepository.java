@@ -1,6 +1,6 @@
 package com.watchnext.feedback_service.repository;
 
-import com.watchnext.common.model.MediaType;
+import com.watchnext.common.enums.MediaType;
 import com.watchnext.feedback_service.entity.Rating;
 import java.util.List;
 import java.util.Optional;

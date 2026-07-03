@@ -1,6 +1,6 @@
 package com.watchnext.feedback_service.dto.rating;
 
-import com.watchnext.common.model.MediaType;
+import com.watchnext.common.enums.MediaType;
 import jakarta.validation.constraints.NotNull;
 
 public record RatingRequest(
