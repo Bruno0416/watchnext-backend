@@ -1,5 +1,6 @@
 package com.watchnext.auth_service.entity;
 
+import com.watchnext.auth_service.enums.Role;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -34,18 +35,19 @@ public class Users implements UserDetails {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "username", nullable = false, length = 50)
-    private String username;
-
     @Column(name = "email", unique = true, nullable = false, length = 150)
     private String email;
 
-    @Column(name = "password", nullable = false, length = 100)
+    @Column(name = "password", length = 100)
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Role role;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean emailVerified = false;
 
     // fecha para saber antiguedad del usuario
     @CreationTimestamp

@@ -8,6 +8,8 @@ COPY auth-service/pom.xml auth-service/
 COPY content-service/pom.xml content-service/
 COPY list-service/pom.xml list-service/
 COPY feedback-service/pom.xml feedback-service/
+COPY user-service/pom.xml user-service/
+COPY email-service/pom.xml email-service/
 COPY gateway/pom.xml gateway/
 COPY eureka-server/pom.xml eureka-server/
 

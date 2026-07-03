@@ -15,6 +15,14 @@ eureka:
   client:
     enabled: false
 
+email-service:
+  api:
+    base-url: http://email-service:9000/email
+
+verification:
+  code:
+    expiration-minutes: 10
+
 application:
   security:
     jwt:
@@ -23,3 +31,9 @@ application:
         expiration: 86400000
       refresh-token:
         expiration: 604800000
+
+auth:
+  oauth:
+    google:
+      allowed-audiences:
+        - 123456789.googleusercontent.com

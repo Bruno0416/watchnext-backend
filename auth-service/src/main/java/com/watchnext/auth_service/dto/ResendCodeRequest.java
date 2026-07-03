@@ -1,12 +1,14 @@
 package com.watchnext.auth_service.dto;
 
+import com.watchnext.common.enums.CodeType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
-public record LoginRequest(
+public record ResendCodeRequest(
     @NotBlank(message = "El correo no puede estar vacio")
     @Email(message = "Debe ser un correo valido: email@example.com")
     String email,
 
-    @NotBlank(message = "La contraseña no puede estar vacia") String password
+    @NotNull(message = "El tipo de codigo no puede estar vacio") CodeType type
 ) {}

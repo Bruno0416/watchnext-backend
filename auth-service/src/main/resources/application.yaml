@@ -18,6 +18,14 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+email-service:
+  api:
+    base-url: http://email-service:8086/api/v1/email/internal
+
+verification:
+  code:
+    expiration-minutes: 10
+
 application:
   security:
     jwt:
@@ -26,6 +34,12 @@ application:
         expiration: ${JWT_ACCESS_EXPIRATION}
       refresh-token:
         expiration: ${JWT_REFRESH_EXPIRATION}
+
+auth:
+  oauth:
+    google:
+      allowed-audiences:
+        - ${GOOGLE_WEB_CLIENT_ID}
 
 eureka:
   client:
@@ -36,8 +50,3 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  version: 1.0.0

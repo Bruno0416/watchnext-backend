@@ -1,6 +1,7 @@
 package com.watchnext.auth_service.security;
 
 import com.watchnext.auth_service.entity.Users;
+import com.watchnext.auth_service.exceptions.InvalidResetToken;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -38,6 +39,8 @@ public class JwtUtil {
         );
     }
 
+    // ------------ Generar tokens ------------
+
     public String generateRefreshToken(Users user) {
         // El refresh token no necesita extraClaims (roles, name, etc.)
         return Jwts.builder()
@@ -64,6 +67,32 @@ public class JwtUtil {
         */
         return getToken(extraClaims, user);
     }
+
+    // ------------ tokens password recovery  ------------
+    public String generateResetToken(String email) {
+        return Jwts.builder()
+            .subject(email)
+            .claim("purpose", "PASSWORD_RESET")
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + 10 * 60 * 1000)) // 10 min
+            .signWith(key, Jwts.SIG.HS512)
+            .compact();
+    }
+
+    public String validateResetTokenAndGetEmail(String token) {
+        Claims claims = Jwts.parser()
+            .verifyWith(key)
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
+
+        if (!"PASSWORD_RESET".equals(claims.get("purpose", String.class))) {
+            throw new InvalidResetToken();
+        }
+        return claims.getSubject();
+    }
+
+    // -----------------------------------------------------------
 
     // getToken genera el token real con claims(role y otros datos) y usuario
     private String getToken(Map<String, Object> extraClaims, UserDetails user) {
