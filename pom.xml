@@ -26,6 +26,10 @@
         <spring-cloud.version>2025.1.2</spring-cloud.version>
         <mapstruct.version>1.6.2</mapstruct.version>
         <jjwt.version>0.13.0</jjwt.version>
+        <google-api-client.version>2.7.0</google-api-client.version>
+        <resend.version>v4.15.0</resend.version>
+        <bucket.version>8.19.0</bucket.version>
+        <caffeine.version>3.2.4</caffeine.version>
     </properties>
 
     <dependencyManagement>
@@ -67,6 +71,41 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>2.18.2</version>
             </dependency>
+            <!-- Para almacenar imagenes de ususarios -->
+            <dependency>
+                <groupId>com.cloudinary</groupId>
+                <artifactId>cloudinary-http45</artifactId>
+                <version>1.39.0</version>
+            </dependency>
+            <!-- Verificacion de id_token de Google -->
+            <dependency>
+                <groupId>com.google.api-client</groupId>
+                <artifactId>google-api-client</artifactId>
+                <version>${google-api-client.version}</version>
+            </dependency>
+            <!-- Resend dependencia -->
+            <dependency>
+                <groupId>com.resend</groupId>
+                <artifactId>resend-java</artifactId>
+                <version>${resend.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <!-- Rate Limiting Dependencies -->
+            <dependency>
+                <groupId>com.bucket4j</groupId>
+                <artifactId>bucket4j_jdk17-core</artifactId>
+                <version>${bucket.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bucket4j</groupId>
+                <artifactId>bucket4j_jdk17-caffeine</artifactId>
+                <version>${bucket.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -77,6 +116,8 @@
         <module>content-service</module>
         <module>list-service</module>
         <module>feedback-service</module>
+        <module>user-service</module>
+        <module>email-service</module>
         <module>gateway</module>
         <module>eureka-server</module>
     </modules>

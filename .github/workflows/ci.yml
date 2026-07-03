@@ -15,6 +15,8 @@ jobs:
       content: ${{ steps.filter.outputs.content }}
       list: ${{ steps.filter.outputs.list }}
       feedback: ${{ steps.filter.outputs.feedback }}
+      user: ${{ steps.filter.outputs.user }}
+      email: ${{ steps.filter.outputs.email }}
       gateway: ${{ steps.filter.outputs.gateway }}
       eureka: ${{ steps.filter.outputs.eureka }}
     steps:
@@ -40,6 +42,16 @@ jobs:
               - '.github/workflows/ci.yml'
             feedback:
               - 'feedback-service/**'
+              - 'common/**'
+              - 'pom.xml'
+              - '.github/workflows/ci.yml'
+            user:
+              - 'user-service/**'
+              - 'common/**'
+              - 'pom.xml'
+              - '.github/workflows/ci.yml'
+            email:
+              - 'email-service/**'
               - 'common/**'
               - 'pom.xml'
               - '.github/workflows/ci.yml'
@@ -130,7 +142,45 @@ jobs:
       - name: Compilar Feedback Service
         run: ./mvnw -pl feedback-service -am package
 
-  # 6. Compila Gateway (Solo si hubo cambios)
+  # 6. Compila User Service (Solo si hubo cambios)
+  build-user:
+    needs: changes
+    if: ${{ needs.changes.outputs.user == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N
+      - name: Compilar User Service
+        run: ./mvnw -pl user-service -am package
+
+  # 7. Compila Email Service (Solo si hubo cambios)
+  build-email:
+    needs: changes
+    if: ${{ needs.changes.outputs.email == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N
+      - name: Compilar Email Service
+        run: ./mvnw -pl email-service -am package
+
+  # 8. Compila Gateway (Solo si hubo cambios)
   build-gateway:
     needs: changes
     if: ${{ needs.changes.outputs.gateway == 'true' }}
@@ -149,7 +199,7 @@ jobs:
       - name: Compilar Gateway
         run: ./mvnw -pl gateway -am package
 
-  # 7. Compila Eureka Server (Solo si hubo cambios)
+  # 9. Compila Eureka Server (Solo si hubo cambios)
   build-eureka:
     needs: changes
     if: ${{ needs.changes.outputs.eureka == 'true' }}
