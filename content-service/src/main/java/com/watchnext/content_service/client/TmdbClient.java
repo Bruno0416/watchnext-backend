@@ -48,7 +48,7 @@ public class TmdbClient {
             .build();
     }
 
-    // -----> Movies <-----
+    // --- Movies ----
 
     public Mono<MovieDetailsRaw> getMovieDetails(
         Integer movieId,
@@ -128,7 +128,7 @@ public class TmdbClient {
             .bodyToMono(MovieListResponse.class);
     }
 
-    // -----> TV Series <-----
+    // --- TV Series ----
 
     public Mono<TvDetailsRaw> getTvDetails(Integer tvId, String language) {
         return webClient
@@ -237,7 +237,7 @@ public class TmdbClient {
             .bodyToMono(TvListResponse.class);
     }
 
-    // -----> Search <-----
+    // --- Search ----
 
     public Mono<List<SearchResult>> search(
         String query,

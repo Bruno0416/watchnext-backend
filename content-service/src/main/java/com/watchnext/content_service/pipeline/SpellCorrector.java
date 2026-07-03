@@ -46,7 +46,7 @@ public class SpellCorrector {
         this.props = props;
     }
 
-    // ─── Inicialización ──────────────────────────────────────────────────────
+    // --- Inicializacion ---
 
     @PostConstruct
     void preload() {
@@ -81,7 +81,7 @@ public class SpellCorrector {
             return query;
         }
 
-        // 1. extraer idioma y obtener o crear instancia de correccion
+        // 1. Extraer idioma y obtener o crear instancia de correccion
         String lang = extractLang(language);
         SymSpellCheck checker = getOrCreate(lang);
         if (checker == null) {
@@ -89,7 +89,7 @@ public class SpellCorrector {
         }
 
         try {
-            // 2. aplicar correccion segun si es palabra unica o compuesta
+            // 2. Aplicar correccion segun si es palabra unica o compuesta
             String corrected = query.contains(" ")
                 ? correctCompound(checker, query)
                 : correctSingle(checker, query);
@@ -127,11 +127,11 @@ public class SpellCorrector {
         return isReady(FALLBACK_LANG);
     }
 
-    // ─── Corrección interna ───────────────────────────────────────────────────
+    // --- Correccion interna ---
 
     private String correctSingle(SymSpellCheck checker, String word)
         throws SpellCheckException {
-        // 1. buscar sugerencias para palabra unica
+        // 1. Buscar sugerencias para palabra unica
         List<SuggestionItem> suggestions = checker.lookup(
             word,
             Verbosity.TOP,
@@ -143,7 +143,7 @@ public class SpellCorrector {
 
     private String correctCompound(SymSpellCheck checker, String phrase)
         throws SpellCheckException {
-        // 1. buscar sugerencias para frase compuesta
+        // 1. Buscar sugerencias para frase compuesta
         List<SuggestionItem> suggestions = checker.lookupCompound(
             phrase,
             props.getSpell().getMaxEditDistance()
@@ -152,10 +152,10 @@ public class SpellCorrector {
         return suggestions.get(0).getTerm();
     }
 
-    // ─── Inicialización lazy del checker ─────────────────────────────────────
+    // --- Inicialización lazy del checker ---
 
     private SymSpellCheck getOrCreate(String lang) {
-        // 1. retornar instancia existente o nulo si fallo previamente
+        // 1. Retornar instancia existente o nulo si fallo previamente
         if (checkers.containsKey(lang)) return checkers.get(lang);
         if (failedLangs.containsKey(lang)) return null;
 
@@ -182,7 +182,7 @@ public class SpellCorrector {
             return null;
         }
 
-        // 2. construir e inicializar nueva instancia de correccion ortografica
+        // 2. Construir e inicializar nueva instancia de correccion ortografica
         return checkers.computeIfAbsent(lang, l ->
             buildChecker(l, basePath, domainPath)
         );
@@ -194,7 +194,7 @@ public class SpellCorrector {
         String domainPath
     ) {
         try {
-            // 1. configurar parametros de correccion ortografica
+            // 1. Configurar parametros de correccion ortografica
             SpellCheckSettings settings = SpellCheckSettings.builder()
                 .maxEditDistance(props.getSpell().getMaxEditDistance())
                 .prefixLength(props.getSpell().getPrefixLength())
@@ -203,7 +203,7 @@ public class SpellCorrector {
                 .topK(1)
                 .build();
 
-            // 2. inicializar estructuras de datos para los diccionarios
+            // 2. Inicializar estructuras de datos para los diccionarios
             DataHolder dataHolder = new InMemoryDataHolder(
                 settings,
                 new Murmur3HashFunction()
@@ -248,7 +248,7 @@ public class SpellCorrector {
         }
     }
 
-    // ─── Carga de diccionario ────────────────────────────────────────────────
+    // --- Carga de diccionario ---
 
     private void loadDictionary(
         DataHolder dataHolder,
@@ -315,7 +315,7 @@ public class SpellCorrector {
         );
     }
 
-    // ─── Utilidades ──────────────────────────────────────────────────────────
+    // --- Utilidades ---
 
     private String extractLang(String language) {
         if (language == null || language.isBlank()) return FALLBACK_LANG;

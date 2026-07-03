@@ -6,13 +6,6 @@ import com.watchnext.content_service.dto.common.Genre;
 import com.watchnext.content_service.dto.common.VideoWrapper;
 import java.util.List;
 
-/**
- * Internal DTO that mirrors the raw TMDB response for
- * GET /tv/{id}?append_to_response=credits,videos.
- *
- * This is NOT what the API exposes. ContentServiceImpl maps this to TvDetails
- * after trimming cast and normalizing videos.
- */
 public record TvDetailsRaw(
     Integer id,
     String name,

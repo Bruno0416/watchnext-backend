@@ -2,7 +2,7 @@ package com.watchnext.content_service.service.bulk;
 
 import com.watchnext.common.dto.ContentRefRequest;
 import com.watchnext.common.dto.internal.ContentBasicDetail;
-import com.watchnext.common.model.MediaType;
+import com.watchnext.common.enums.MediaType;
 import com.watchnext.content_service.dto.movies.MovieDetails;
 import com.watchnext.content_service.dto.tv.TvDetails;
 import com.watchnext.content_service.service.content.ContentService;

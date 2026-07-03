@@ -6,12 +6,6 @@ import com.watchnext.content_service.dto.common.Genre;
 import com.watchnext.content_service.dto.common.Video;
 import java.util.List;
 
-/**
- * Enriched TV series detail returned to API clients.
- * cast is trimmed to top 15 (ordered by TMDB order).
- * videos contains only YouTube entries, sorted Trailer → Teaser → rest.
- * seasons is a summary list WITHOUT episodes (see /tv/{id}/season/{n} for episodes).
- */
 public record TvDetails(
     Integer id,
     String name,

@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(
     scanBasePackages = {
         "com.watchnext.content_service",
-        "com.watchnext.common.exception",
+        "com.watchnext.common.exceptions",
         "com.watchnext.common.security",
     }
 )

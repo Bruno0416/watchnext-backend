@@ -6,12 +6,6 @@ import com.watchnext.content_service.dto.common.Genre;
 import com.watchnext.content_service.dto.common.Video;
 import java.util.List;
 
-/**
- * Enriched movie detail returned to API clients.
- * cast is trimmed to top 15 (ordered by TMDB order).
- * videos contains only YouTube entries, sorted Trailer → Teaser → rest,
- * with official entries first within each type.
- */
 public record MovieDetails(
     Integer id,
     String title,
