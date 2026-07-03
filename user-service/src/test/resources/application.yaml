@@ -1,0 +1,42 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+content-service:
+  api:
+    base-url: http://content-service/api/test/path
+
+cloudinary:
+  url: cloudinary://1234567890:abcdefghijklmnop@dummycloud
+
+eureka:
+  client:
+    enabled: false
+
+application:
+  security:
+    jwt:
+      secret-key: "clave-secreta-falsa-solo-para-entorno-de-pruebas"
+      access-token:
+        expiration: 86400000
+      refresh-token:
+        expiration: 604800000
+
+app:
+  profile:
+    favorites:
+      max-size: 5
