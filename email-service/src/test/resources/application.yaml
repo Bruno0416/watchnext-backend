@@ -1,0 +1,28 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: email-service
+
+  messages:
+    basename: messages
+    encoding: UTF-8
+
+application:
+  security:
+    jwt:
+      secret-key: "clave-secreta-falsa-solo-para-entorno-de-pruebas"
+      access-token:
+        expiration: 86400000
+
+resend:
+  api:
+    base-url: https://api.resend.com
+    key: fake-api-key-for-test
+  mail:
+    from: "fake-domain-for-test"
+
+eureka:
+  client:
+    enabled: false

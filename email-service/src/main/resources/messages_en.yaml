@@ -1,0 +1,10 @@
+email:
+  confirmation:
+    title: "Verify your email"
+    body: "Enter the code below to confirm your email address and finish setting up your account. This code is valid for 10 minutes."
+  recovery:
+    title: "Recover your password"
+    body: "Enter the code below to authorize your password reset request. This code is valid for 10 minutes."
+  code_label: "YOUR VERIFICATION CODE"
+  return_app: "Return to the app and enter this code to continue. It expires in 10 minutes."
+  ignore: "If you didn't request this, you can safely ignore this email. Someone may have entered your address by mistake."

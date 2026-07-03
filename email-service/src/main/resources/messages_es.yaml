@@ -1,0 +1,10 @@
+email:
+  confirmation:
+    title: "Verifica tu correo"
+    body: "Ingresa el código a continuación para confirmar tu dirección de correo electrónico y terminar de configurar tu cuenta. Este código es válido por 10 minutos."
+  recovery:
+    title: "Recupera tu contraseña"
+    body: "Ingresa el código a continuación para autorizar el restablecimiento de tu contraseña. Este código es válido por 10 minutos."
+  code_label: "TU CÓDIGO DE VERIFICACIÓN"
+  return_app: "Vuelve a la aplicación e ingresa este código para continuar. Expirará en 10 minutos."
+  ignore: "Si no solicitaste esto, puedes ignorar este correo con seguridad. Alguien podría haber introducido tu dirección por error."

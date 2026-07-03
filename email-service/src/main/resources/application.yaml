@@ -1,0 +1,32 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: email-service
+
+  messages:
+    basename: messages
+    encoding: UTF-8
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+
+resend:
+  api:
+    base-url: https://api.resend.com
+    key: ${RESEND_API_KEY}
+  mail:
+    from: "WatchNext <noreply@watch-next.app>"
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://admin:${EUREKA_ADMIN_PASSWD}@eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
