@@ -117,7 +117,7 @@ class ListControllerTest {
         // 1. preparar request
         var listId = UUID.randomUUID();
         var items = List.of(
-            new ContentRefRequest(1, com.watchnext.common.model.MediaType.MOVIE)
+            new ContentRefRequest(1, com.watchnext.common.enums.MediaType.MOVIE)
         );
         var request = new ItemsRequest(items);
         doNothing().when(service).addItems(any(), any());
@@ -155,7 +155,7 @@ class ListControllerTest {
         // 1. preparar request
         var listId = UUID.randomUUID();
         var items = List.of(
-            new ContentRefRequest(1, com.watchnext.common.model.MediaType.MOVIE)
+            new ContentRefRequest(1, com.watchnext.common.enums.MediaType.MOVIE)
         );
         var request = new ItemsRequest(items);
         doThrow(new ListNotFound()).when(service).addItems(any(), any());
@@ -176,7 +176,7 @@ class ListControllerTest {
         // 1. preparar request
         var listId = UUID.randomUUID();
         var items = List.of(
-            new ContentRefRequest(1, com.watchnext.common.model.MediaType.MOVIE)
+            new ContentRefRequest(1, com.watchnext.common.enums.MediaType.MOVIE)
         );
         var request = new ItemsRequest(items);
         doThrow(new ItemAlreadyExists("El item ya existe"))
@@ -201,7 +201,7 @@ class ListControllerTest {
         // 1. preparar request
         var listId = UUID.randomUUID();
         var items = List.of(
-            new ContentRefRequest(1, com.watchnext.common.model.MediaType.MOVIE)
+            new ContentRefRequest(1, com.watchnext.common.enums.MediaType.MOVIE)
         );
         var request = new ItemsRequest(items);
         doNothing().when(service).removeItems(any(), any());
@@ -239,7 +239,7 @@ class ListControllerTest {
         // 1. preparar request
         var listId = UUID.randomUUID();
         var items = List.of(
-            new ContentRefRequest(1, com.watchnext.common.model.MediaType.MOVIE)
+            new ContentRefRequest(1, com.watchnext.common.enums.MediaType.MOVIE)
         );
         var request = new ItemsRequest(items);
         doThrow(new ListNotFound()).when(service).removeItems(any(), any());

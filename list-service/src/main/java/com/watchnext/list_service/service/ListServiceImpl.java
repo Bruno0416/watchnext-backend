@@ -2,8 +2,8 @@ package com.watchnext.list_service.service;
 
 import com.watchnext.common.dto.ContentRefRequest;
 import com.watchnext.common.dto.internal.ContentBasicDetail;
+import com.watchnext.common.enums.MediaType;
 import com.watchnext.common.model.ContentRef;
-import com.watchnext.common.model.MediaType;
 import com.watchnext.common.model.User;
 import com.watchnext.common.security.CurrentUser;
 import com.watchnext.list_service.client.ContentServiceClient;
