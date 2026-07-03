@@ -1,8 +1,5 @@
 package com.watchnext.common.dto;
 
-import com.watchnext.common.model.MediaType;
+import com.watchnext.common.enums.MediaType;
 
-public record ContentRefResponse(
-    Integer tmdbId,
-    MediaType mediaType
-) {}
+public record ContentRefResponse(Integer tmdbId, MediaType mediaType) {}

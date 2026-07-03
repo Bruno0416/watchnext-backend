@@ -1,6 +1,6 @@
 package com.watchnext.common.dto.internal;
 
-import com.watchnext.common.model.MediaType;
+import com.watchnext.common.enums.MediaType;
 
 public record ContentBasicDetail(
     Integer tmdbId,

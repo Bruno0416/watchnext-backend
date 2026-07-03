@@ -1,5 +1,6 @@
 package com.watchnext.common.model;
 
+import com.watchnext.common.enums.MediaType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;

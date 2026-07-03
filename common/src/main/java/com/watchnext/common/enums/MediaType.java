@@ -1,4 +1,4 @@
-package com.watchnext.common.model;
+package com.watchnext.common.enums;
 
 public enum MediaType {
     MOVIE,
