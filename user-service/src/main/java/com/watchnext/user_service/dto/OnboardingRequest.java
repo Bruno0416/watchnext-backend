@@ -1,6 +1,6 @@
 package com.watchnext.user_service.dto;
 
-import com.watchnext.common.dto.ContentRefRequest;
+
 import com.watchnext.user_service.enums.ProfileVisibility;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -27,7 +27,7 @@ public record OnboardingRequest(
     String bio,
 
     @Size(max = 5, message = "Máximo 5 favoritos")
-    List<@Valid ContentRefRequest> favorites
+    List<@Valid FavoriteItemRequest> favorites
 ) {
     public OnboardingRequest {
         if (favorites == null) favorites = List.of();

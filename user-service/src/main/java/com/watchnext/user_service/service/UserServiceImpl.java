@@ -4,6 +4,7 @@ import com.watchnext.common.dto.ContentRefRequest;
 import com.watchnext.common.dto.internal.ContentBasicDetail;
 import com.watchnext.common.security.CurrentUser;
 import com.watchnext.user_service.client.ContentServiceClient;
+import com.watchnext.user_service.dto.FavoriteItemRequest;
 import com.watchnext.user_service.dto.FavoritesRequest;
 import com.watchnext.user_service.dto.InternalFollowingResponse;
 import com.watchnext.user_service.dto.OnboardingRequest;
@@ -12,6 +13,7 @@ import com.watchnext.user_service.dto.ProfileSummaryResponse;
 import com.watchnext.user_service.dto.UpdateProfileRequest;
 import com.watchnext.user_service.dto.UsernameAvailabilityResponse;
 import com.watchnext.user_service.entity.Follow;
+import com.watchnext.common.model.ContentRef;
 import com.watchnext.user_service.entity.Profile;
 import com.watchnext.user_service.enums.FollowStatus;
 import com.watchnext.user_service.enums.ProfileVisibility;
@@ -127,9 +129,15 @@ public class UserServiceImpl implements UserService {
 
         // 4. Agregar el top N de favoritos si vienen en la request.
         if (request.favorites() != null && !request.favorites().isEmpty()) {
-            profile
-                .getFavorites()
-                .addAll(contentRefMapper.toModelList(request.favorites()));
+            // 4.1. Crear una copia de los favoritos entrantes y ordenarla basándose en el parámetro position.
+            List<FavoriteItemRequest> sortedRequests = new java.util.ArrayList<>(request.favorites());
+            sortedRequests.sort((a, b) -> {
+                int posA = a.position() != null ? a.position() : Integer.MAX_VALUE;
+                int posB = b.position() != null ? b.position() : Integer.MAX_VALUE;
+                return Integer.compare(posA, posB);
+            });
+            // 4.2. Mapear a entidades y agregarlas a la lista del perfil.
+            profile.getFavorites().addAll(contentRefMapper.toModelListFromFavorites(sortedRequests));
         }
 
         // 5. Guardar para obtener el ID (UUID) necesario para el avatar.
@@ -203,11 +211,43 @@ public class UserServiceImpl implements UserService {
         Profile profile = profileRepo
             .findByUserId(CurrentUser.id())
             .orElseThrow(ProfileNotFound::new);
-        // 3. Reemplazar el top N completo (delete + insert dentro de la transaccion)
-        profile.getFavorites().clear();
-        profile
-            .getFavorites()
-            .addAll(contentRefMapper.toModelList(request.items()));
+        // 3. Crear una copia de la lista entrante y ordenarla basándose en el parámetro position explícito.
+        List<FavoriteItemRequest> sortedRequests = new java.util.ArrayList<>(request.items());
+        sortedRequests.sort((a, b) -> {
+            int posA = a.position() != null ? a.position() : Integer.MAX_VALUE;
+            int posB = b.position() != null ? b.position() : Integer.MAX_VALUE;
+            return Integer.compare(posA, posB);
+        });
+        
+        // 4. Mapear a lista de entidades para sincronización.
+        List<ContentRef> newFavorites = contentRefMapper.toModelListFromFavorites(sortedRequests);
+        List<ContentRef> currentFavorites = profile.getFavorites();
+
+        // 5. Retener únicamente los elementos que siguen existiendo en la nueva lista (eliminar los demás).
+        currentFavorites.retainAll(newFavorites);
+        
+        // 6. Iterar e insertar/mover inteligentemente los elementos para minimizar consultas a la BD.
+        for (int i = 0; i < newFavorites.size(); i++) {
+            ContentRef expected = newFavorites.get(i);
+            if (i < currentFavorites.size()) {
+                if (!currentFavorites.get(i).equals(expected)) {
+                    int idx = currentFavorites.indexOf(expected);
+                    if (idx > i) {
+                        ContentRef removed = currentFavorites.remove(idx);
+                        currentFavorites.add(i, removed);
+                    } else {
+                        currentFavorites.add(i, expected);
+                    }
+                }
+            } else {
+                currentFavorites.add(expected);
+            }
+        }
+        
+        // 7. Limpiar cualquier elemento excedente si el tamaño final supera la nueva lista esperada.
+        while (currentFavorites.size() > newFavorites.size()) {
+            currentFavorites.remove(currentFavorites.size() - 1);
+        }
         profileRepo.save(profile);
     }
 
