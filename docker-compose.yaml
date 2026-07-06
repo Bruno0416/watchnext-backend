@@ -42,6 +42,8 @@ services:
         condition: service_started
       user-service:
         condition: service_started
+      email-service:
+        condition: service_started
       eureka-server:
         condition: service_healthy
     env_file: .env
