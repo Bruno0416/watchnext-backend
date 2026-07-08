@@ -31,6 +31,7 @@ public class TmdbClient {
     private final ObjectMapper objectMapper;
 
     public TmdbClient(
+        WebClient.Builder builder,
         @Value("${tmdb.api.base-url}") String baseUrl,
         @Value("${tmdb.api.key}") String apiKey,
         ObjectMapper objectMapper
@@ -41,7 +42,7 @@ public class TmdbClient {
             Duration.ofSeconds(10)
         );
 
-        this.webClient = WebClient.builder()
+        this.webClient = builder
             .baseUrl(baseUrl)
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .defaultHeader("Authorization", "Bearer " + apiKey)

@@ -6,7 +6,7 @@ spring:
     name: feedback-service
 
   datasource:
-    url: ${FEEDBACK_DB_URL}
+    url: ${FEEDBACK_DB_URL:jdbc:postgresql://ep-floral-paper-acot5jab-pooler.sa-east-1.aws.neon.tech:5432/feedback_db?sslmode=require}
     username: ${FEEDBACK_DB_USER}
     password: ${FEEDBACK_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver

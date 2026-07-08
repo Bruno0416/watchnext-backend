@@ -6,8 +6,13 @@ spring:
     name: content-service
   data:
     redis:
-      host: watch_next_redis # Docker container
-      port: 6379
+      host: ${REDISHOST:watch_next_redis} # Docker container
+      port: ${REDISPORT:6379}
+      password: ${REDISPASSWORD:}
+
+  http:
+    codecs:
+      max-in-memory-size: 3MB
 
 tmdb:
   api:
