@@ -90,7 +90,36 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    // 6. Fallback — cualquier excepcion no manejada
+    // 6. Handler para errores de conversion de @PathVariable (Spring MVC envuelve la excepcion original)
+    @ExceptionHandler(
+        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class
+    )
+    public ProblemDetail handlePathVariableTypeMismatch(
+        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+            ex
+    ) {
+        Throwable cause = ex.getCause();
+
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        String message =
+            "Valor invalido para el parametro '" + ex.getName() + "'";
+
+        if (cause instanceof WatchNextException watchNextException) {
+            status = watchNextException.getStatus();
+            message = watchNextException.getMessage();
+        }
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+            status,
+            message
+        );
+        problemDetail.setTitle("Error en la solicitud");
+        problemDetail.setProperty("timestamp", Instant.now());
+
+        return problemDetail;
+    }
+
+    // 7. Fallback — cualquier excepcion no manejada
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenericException(Exception ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
