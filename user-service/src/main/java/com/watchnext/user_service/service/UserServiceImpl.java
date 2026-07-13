@@ -153,7 +153,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateProfile(UpdateProfileRequest request) {
+    public ProfileResponse updateProfile(
+        UpdateProfileRequest request,
+        String language
+    ) {
         // 1. Obtener perfil del usuario autenticado.
         Profile profile = profileRepo
             .findByUserId(CurrentUser.id())
@@ -168,8 +171,23 @@ public class UserServiceImpl implements UserService {
             request.visibility()
         );
 
-        // 3. Persistir.
+        // 3. Reconciliar favoritos solo si el campo fue enviado.
+        if (request.favorites() != null) {
+            reconcileFavorites(profile, request.favorites());
+        }
+
+        // 4. Persistir.
         profileRepo.save(profile);
+
+        // 5. Hidratar favoritos y devolver el perfil actualizado.
+        List<ContentRefRequest> requests = contentRefMapper.toRequestList(
+            profile.getFavorites()
+        );
+        List<ContentBasicDetail> contents = contentClient.fetchBulkContent(
+            requests,
+            language
+        );
+        return mapper.toResponse(profile, contents);
     }
 
     @Override
@@ -201,32 +219,61 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void replaceFavorites(FavoritesRequest request) {
-        // 1. Validar el tope configurable de favoritos.
-        if (request.items().size() > favoritesMaxSize) {
+        // 1. Obtener perfil del usuario autenticado.
+        Profile profile = profileRepo
+            .findByUserId(CurrentUser.id())
+            .orElseThrow(ProfileNotFound::new);
+        // 2. Reconciliar la lista entrante contra la persistida.
+        reconcileFavorites(profile, request.items());
+        profileRepo.save(profile);
+    }
+
+    private void reconcileFavorites(
+        Profile profile,
+        List<FavoriteItemRequest> items
+    ) {
+        // 1. Validar el tope maximo configurable.
+        if (items.size() > favoritesMaxSize) {
             throw new IllegalArgumentException(
                 "Máximo " + favoritesMaxSize + " favoritos permitidos"
             );
         }
-        // 2. Obtener perfil del usuario autenticado.
-        Profile profile = profileRepo
-            .findByUserId(CurrentUser.id())
-            .orElseThrow(ProfileNotFound::new);
-        // 3. Crear una copia de la lista entrante y ordenarla basándose en el parámetro position explícito.
-        List<FavoriteItemRequest> sortedRequests = new java.util.ArrayList<>(request.items());
+
+        // 2. Validar que no haya tmdbId duplicados.
+        long distinctIds = items
+            .stream()
+            .map(FavoriteItemRequest::tmdbId)
+            .distinct()
+            .count();
+        if (distinctIds != items.size()) {
+            throw new IllegalArgumentException("No se permiten tmdbId duplicados");
+        }
+
+        // 3. Ordenar por position explicito (nulls al final, orden estable).
+        List<FavoriteItemRequest> sortedRequests = new java.util.ArrayList<>(items);
         sortedRequests.sort((a, b) -> {
             int posA = a.position() != null ? a.position() : Integer.MAX_VALUE;
             int posB = b.position() != null ? b.position() : Integer.MAX_VALUE;
             return Integer.compare(posA, posB);
         });
-        
-        // 4. Mapear a lista de entidades para sincronización.
-        List<ContentRef> newFavorites = contentRefMapper.toModelListFromFavorites(sortedRequests);
-        List<ContentRef> currentFavorites = profile.getFavorites();
 
-        // 5. Retener únicamente los elementos que siguen existiendo en la nueva lista (eliminar los demás).
+        // 4. Mapear a las nuevas entidades.
+        List<ContentRef> newFavorites = contentRefMapper.toModelListFromFavorites(
+            sortedRequests
+        );
+
+        // 5. Vaciamos la lista en la memoria de Hibernate
+        profile.getFavorites().clear();
+
+        // 6. Obligamos a hibernate a ejecutar el DELETE en la BD
+        profileRepo.saveAndFlush(profile);
+
+        // 7. Añadimos los nuevos favoritos limpios
+        profile.getFavorites().addAll(newFavorites);
+
+        List<ContentRef> currentFavorites = profile.getFavorites();
         currentFavorites.retainAll(newFavorites);
-        
-        // 6. Iterar e insertar/mover inteligentemente los elementos para minimizar consultas a la BD.
+
         for (int i = 0; i < newFavorites.size(); i++) {
             ContentRef expected = newFavorites.get(i);
             if (i < currentFavorites.size()) {
@@ -243,12 +290,11 @@ public class UserServiceImpl implements UserService {
                 currentFavorites.add(expected);
             }
         }
-        
-        // 7. Limpiar cualquier elemento excedente si el tamaño final supera la nueva lista esperada.
+
+        // 8. Limpiar elementos excedentes.
         while (currentFavorites.size() > newFavorites.size()) {
             currentFavorites.remove(currentFavorites.size() - 1);
         }
-        profileRepo.save(profile);
     }
 
     @Override

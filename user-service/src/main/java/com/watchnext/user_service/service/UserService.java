@@ -18,7 +18,7 @@ public interface UserService {
 
     void completeOnboarding(OnboardingRequest request, MultipartFile avatar);
 
-    void updateProfile(UpdateProfileRequest request);
+    ProfileResponse updateProfile(UpdateProfileRequest request, String language);
 
     // ──────────────────── Gestion de Avatar ────────────────────
     void uploadAvatar(MultipartFile file);

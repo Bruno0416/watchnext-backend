@@ -55,11 +55,11 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<Void> updateProfile(
-        @Valid @RequestBody UpdateProfileRequest request
+    public ResponseEntity<ProfileResponse> updateProfile(
+        @Valid @RequestBody UpdateProfileRequest request,
+        @RequestParam(defaultValue = "en-US") String language
     ) {
-        service.updateProfile(request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(service.updateProfile(request, language));
     }
 
     @PostMapping(

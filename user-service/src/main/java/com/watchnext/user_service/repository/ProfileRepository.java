@@ -23,4 +23,6 @@ public interface ProfileRepository extends JpaRepository<Profile, UUID> {
     );
 
     List<Profile> findAllByUserIdIn(Collection<String> userIds);
+
+
 }

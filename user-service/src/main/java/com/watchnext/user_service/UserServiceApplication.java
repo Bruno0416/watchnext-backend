@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.watchnext.user_service",
         "com.watchnext.common.exceptions",
         "com.watchnext.common.security",
+        "com.watchnext.common.config"
     }
 )
 public class UserServiceApplication {

@@ -5,6 +5,10 @@ spring:
   application:
     name: user-service
 
+  jackson:
+      mapper:
+        accept-case-insensitive-enums: true
+
   servlet:
     multipart:
       max-file-size: 2MB

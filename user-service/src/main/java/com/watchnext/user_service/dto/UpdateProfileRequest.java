@@ -1,7 +1,9 @@
 package com.watchnext.user_service.dto;
 
 import com.watchnext.user_service.enums.ProfileVisibility;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 
 public record UpdateProfileRequest(
     @Size(max = 50, message = "El nombre no puede exceder 50 caracteres")
@@ -10,5 +12,7 @@ public record UpdateProfileRequest(
     @Size(max = 500, message = "La bio no puede exceder 500 caracteres")
     String bio,
 
-    ProfileVisibility visibility
+    ProfileVisibility visibility,
+
+    List<@Valid FavoriteItemRequest> favorites
 ) {}
