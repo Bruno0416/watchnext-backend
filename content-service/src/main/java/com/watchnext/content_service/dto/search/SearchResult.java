@@ -8,5 +8,6 @@ public record SearchResult(
     String mediaType,
     Integer year,
     double popularity,
-    double voteAverage
+    double voteAverage,
+    String knownForDepartment
 ) {}

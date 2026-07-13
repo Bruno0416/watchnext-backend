@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: content-service
+  jackson:
+    mapper:
+      accept-case-insensitive-enums: true
   data:
     redis:
       host: ${REDISHOST:watch_next_redis} # Docker container
@@ -18,6 +21,7 @@ tmdb:
   api:
     base-url: https://api.themoviedb.org/3
     key: ${TMDB_API_KEY}
+  default-region: US
 
 application:
   security:

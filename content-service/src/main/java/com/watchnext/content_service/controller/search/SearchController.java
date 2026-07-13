@@ -24,7 +24,6 @@ public class SearchController {
             defaultValue = "en-US"
         ) String language
     ) {
-        // 1. delegar ejecucion de busqueda al servicio principal
         return searchService.search(query, language);
     }
 }

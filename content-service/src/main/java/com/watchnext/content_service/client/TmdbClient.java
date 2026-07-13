@@ -2,10 +2,19 @@ package com.watchnext.content_service.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.watchnext.common.enums.MediaType;
+import com.watchnext.common.enums.TimeWindow;
+import com.watchnext.content_service.dto.common.GenreListResponse;
+import com.watchnext.content_service.dto.common.ReviewResponse;
+import com.watchnext.content_service.dto.common.TrendingResponse;
+import com.watchnext.content_service.dto.common.WatchProviders;
+import com.watchnext.content_service.dto.movies.CollectionDetails;
 import com.watchnext.content_service.dto.movies.MovieDetailsRaw;
 import com.watchnext.content_service.dto.movies.MovieListResponse;
+import com.watchnext.content_service.dto.persons.PersonDetailsRaw;
 import com.watchnext.content_service.dto.search.SearchResult;
 import com.watchnext.content_service.dto.tv.TvDetailsRaw;
+import com.watchnext.content_service.dto.tv.TvEpisode;
 import com.watchnext.content_service.dto.tv.TvListResponse;
 import com.watchnext.content_service.dto.tv.TvSeasonDetail;
 import com.watchnext.content_service.exceptions.ErrorFetchingMovieDetails;
@@ -26,6 +35,11 @@ import reactor.netty.http.client.HttpClient;
 
 @Component
 public class TmdbClient {
+
+    private static final String MOVIE_APPEND =
+        "credits,videos,recommendations,similar,external_ids,keywords,alternative_titles";
+    private static final String TV_APPEND =
+        "credits,videos,recommendations,similar,external_ids,keywords,alternative_titles";
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -53,17 +67,21 @@ public class TmdbClient {
 
     public Mono<MovieDetailsRaw> getMovieDetails(
         Integer movieId,
-        String language
+        String language,
+        String region
     ) {
         return webClient
             .get()
-            .uri(uriBuilder ->
+            .uri(uriBuilder -> {
                 uriBuilder
                     .path("/movie/{id}")
-                    .queryParam("append_to_response", "credits,videos")
-                    .queryParam("language", language)
-                    .build(movieId)
-            )
+                    .queryParam("append_to_response", MOVIE_APPEND)
+                    .queryParam("language", language);
+                if (region != null) {
+                    uriBuilder.queryParam("region", region);
+                }
+                return uriBuilder.build(movieId);
+            })
             .retrieve()
             .onStatus(
                 status -> status.value() == 404,
@@ -85,39 +103,109 @@ public class TmdbClient {
             .bodyToMono(MovieDetailsRaw.class);
     }
 
-    public Mono<MovieListResponse> getNowPlaying(
-        Integer page,
-        String language
-    ) {
-        return fetchMovieList("/movie/now_playing", page, language);
-    }
-
-    public Mono<MovieListResponse> getPopular(Integer page, String language) {
-        return fetchMovieList("/movie/popular", page, language);
-    }
-
-    public Mono<MovieListResponse> getTopRated(Integer page, String language) {
-        return fetchMovieList("/movie/top_rated", page, language);
-    }
-
-    public Mono<MovieListResponse> getUpcoming(Integer page, String language) {
-        return fetchMovieList("/movie/upcoming", page, language);
-    }
-
-    private Mono<MovieListResponse> fetchMovieList(
-        String path,
-        Integer page,
-        String language
+    public Mono<WatchProviders> getMovieWatchProviders(
+        Integer movieId,
+        String watchRegion
     ) {
         return webClient
             .get()
             .uri(uriBuilder ->
                 uriBuilder
+                    .path("/movie/{id}/watch/providers")
+                    .queryParam("watch_region", watchRegion)
+                    .build(movieId)
+            )
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
+                    new ErrorFetchingMovieDetails(
+                        "Error al obtener watch providers de la pelicula " +
+                            movieId
+                    )
+                )
+            )
+            .bodyToMono(String.class)
+            .map(json -> {
+                try {
+                    JsonNode root = objectMapper.readTree(json);
+                    JsonNode results = root.path("results").path(watchRegion);
+                    return objectMapper.treeToValue(results, WatchProviders.class);
+                } catch (Exception e) {
+                    return new WatchProviders(null, null, null);
+                }
+            });
+    }
+
+    public Mono<MovieListResponse> getNowPlaying(
+        Integer page,
+        String language
+    ) {
+        return fetchMovieList("/movie/now_playing", page, language, null);
+    }
+
+    public Mono<MovieListResponse> getPopular(Integer page, String language) {
+        return fetchMovieList("/movie/popular", page, language, null);
+    }
+
+    public Mono<MovieListResponse> getTopRated(Integer page, String language) {
+        return fetchMovieList("/movie/top_rated", page, language, null);
+    }
+
+    public Mono<MovieListResponse> getUpcoming(Integer page, String language) {
+        return fetchMovieList("/movie/upcoming", page, language, null);
+    }
+
+    public Mono<MovieListResponse> discoverMovies(
+        String genres,
+        String sortBy,
+        Integer page,
+        String language,
+        String region
+    ) {
+        return fetchMovieList("/discover/movie", page, language, region,
+            uriBuilder -> {
+                if (genres != null && !genres.isBlank()) {
+                    uriBuilder.queryParam("with_genres", genres);
+                }
+                if (sortBy != null && !sortBy.isBlank()) {
+                    uriBuilder.queryParam("sort_by", sortBy);
+                }
+            });
+    }
+
+    private Mono<MovieListResponse> fetchMovieList(
+        String path,
+        Integer page,
+        String language,
+        String region
+    ) {
+        return fetchMovieList(path, page, language, region, null);
+    }
+
+    private Mono<MovieListResponse> fetchMovieList(
+        String path,
+        Integer page,
+        String language,
+        String region,
+        java.util.function.Consumer<
+            org.springframework.web.util.UriBuilder
+        > extraParams
+    ) {
+        return webClient
+            .get()
+            .uri(uriBuilder -> {
+                uriBuilder
                     .path(path)
                     .queryParam("language", language)
-                    .queryParam("page", page)
-                    .build()
-            )
+                    .queryParam("page", page);
+                if (region != null) {
+                    uriBuilder.queryParam("region", region);
+                }
+                if (extraParams != null) {
+                    extraParams.accept(uriBuilder);
+                }
+                return uriBuilder.build();
+            })
             .retrieve()
             .onStatus(HttpStatusCode::isError, response ->
                 Mono.error(
@@ -129,6 +217,29 @@ public class TmdbClient {
             .bodyToMono(MovieListResponse.class);
     }
 
+    public Mono<ReviewResponse> getMovieReviews(
+        Integer movieId,
+        Integer page
+    ) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/movie/{id}/reviews")
+                    .queryParam("page", page)
+                    .build(movieId)
+            )
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
+                    new ErrorFetchingMovieDetails(
+                        "Error al obtener reviews de la pelicula " + movieId
+                    )
+                )
+            )
+            .bodyToMono(ReviewResponse.class);
+    }
+
     // --- TV Series ----
 
     public Mono<TvDetailsRaw> getTvDetails(Integer tvId, String language) {
@@ -137,7 +248,7 @@ public class TmdbClient {
             .uri(uriBuilder ->
                 uriBuilder
                     .path("/tv/{id}")
-                    .queryParam("append_to_response", "credits,videos")
+                    .queryParam("append_to_response", TV_APPEND)
                     .queryParam("language", language)
                     .build(tvId)
             )
@@ -159,6 +270,38 @@ public class TmdbClient {
                 )
             )
             .bodyToMono(TvDetailsRaw.class);
+    }
+
+    public Mono<WatchProviders> getTvWatchProviders(
+        Integer tvId,
+        String watchRegion
+    ) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/tv/{id}/watch/providers")
+                    .queryParam("watch_region", watchRegion)
+                    .build(tvId)
+            )
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
+                    new ErrorFetchingTvDetails(
+                        "Error al obtener watch providers de la serie " + tvId
+                    )
+                )
+            )
+            .bodyToMono(String.class)
+            .map(json -> {
+                try {
+                    JsonNode root = objectMapper.readTree(json);
+                    JsonNode results = root.path("results").path(watchRegion);
+                    return objectMapper.treeToValue(results, WatchProviders.class);
+                } catch (Exception e) {
+                    return new WatchProviders(null, null, null);
+                }
+            });
     }
 
     public Mono<TvSeasonDetail> getTvSeason(
@@ -201,6 +344,44 @@ public class TmdbClient {
             .bodyToMono(TvSeasonDetail.class);
     }
 
+    public Mono<TvEpisode> getTvEpisode(
+        Integer tvId,
+        Integer seasonNumber,
+        Integer episodeNumber,
+        String language
+    ) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/tv/{id}/season/{sn}/episode/{en}")
+                    .queryParam("append_to_response", "credits")
+                    .queryParam("language", language)
+                    .build(tvId, seasonNumber, episodeNumber)
+            )
+            .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                response ->
+                    Mono.error(
+                        new TmdbResourceNotFound(
+                            "Episodio " + episodeNumber +
+                                " de la temporada " + seasonNumber +
+                                " de la serie " + tvId + " no encontrado"
+                        )
+                    )
+            )
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
+                    new ErrorFetchingTvDetails(
+                        "Error al obtener episodio " + episodeNumber +
+                            " de la temporada " + seasonNumber
+                    )
+                )
+            )
+            .bodyToMono(TvEpisode.class);
+    }
+
     public Mono<TvListResponse> getOnTheAirTv(Integer page, String language) {
         return fetchTvList("/tv/on_the_air", page, language);
     }
@@ -213,20 +394,56 @@ public class TmdbClient {
         return fetchTvList("/tv/top_rated", page, language);
     }
 
+    public Mono<TvListResponse> discoverTv(
+        String genres,
+        String sortBy,
+        Integer page,
+        String language,
+        String region
+    ) {
+        return fetchTvList("/discover/tv", page, language, region,
+            uriBuilder -> {
+                if (genres != null && !genres.isBlank()) {
+                    uriBuilder.queryParam("with_genres", genres);
+                }
+                if (sortBy != null && !sortBy.isBlank()) {
+                    uriBuilder.queryParam("sort_by", sortBy);
+                }
+            });
+    }
+
     private Mono<TvListResponse> fetchTvList(
         String path,
         Integer page,
         String language
     ) {
+        return fetchTvList(path, page, language, null, null);
+    }
+
+    private Mono<TvListResponse> fetchTvList(
+        String path,
+        Integer page,
+        String language,
+        String region,
+        java.util.function.Consumer<
+            org.springframework.web.util.UriBuilder
+        > extraParams
+    ) {
         return webClient
             .get()
-            .uri(uriBuilder ->
+            .uri(uriBuilder -> {
                 uriBuilder
                     .path(path)
                     .queryParam("language", language)
-                    .queryParam("page", page)
-                    .build()
-            )
+                    .queryParam("page", page);
+                if (region != null) {
+                    uriBuilder.queryParam("region", region);
+                }
+                if (extraParams != null) {
+                    extraParams.accept(uriBuilder);
+                }
+                return uriBuilder.build();
+            })
             .retrieve()
             .onStatus(HttpStatusCode::isError, response ->
                 Mono.error(
@@ -236,6 +453,154 @@ public class TmdbClient {
                 )
             )
             .bodyToMono(TvListResponse.class);
+    }
+
+    public Mono<ReviewResponse> getTvReviews(
+        Integer tvId,
+        Integer page
+    ) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/tv/{id}/reviews")
+                    .queryParam("page", page)
+                    .build(tvId)
+            )
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
+                    new ErrorFetchingTvDetails(
+                        "Error al obtener reviews de la serie " + tvId
+                    )
+                )
+            )
+            .bodyToMono(ReviewResponse.class);
+    }
+
+    // --- Persons ---
+
+    public Mono<PersonDetailsRaw> getPersonDetails(
+        Long personId,
+        String language
+    ) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/person/{id}")
+                    .queryParam("append_to_response", "combined_credits,external_ids,images")
+                    .queryParam("language", language)
+                    .build(personId)
+            )
+            .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                response ->
+                    Mono.error(
+                        new TmdbResourceNotFound(
+                            "Persona con id " + personId + " no encontrada"
+                        )
+                    )
+            )
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
+                    new ErrorFetchingMovieDetails(
+                        "Error al obtener persona con id " + personId
+                    )
+                )
+            )
+            .bodyToMono(PersonDetailsRaw.class);
+    }
+
+    // --- Genres ---
+
+    public Mono<GenreListResponse> getMovieGenres(String language) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/genre/movie/list")
+                    .queryParam("language", language)
+                    .build()
+            )
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(new RuntimeException("Error al obtener generos de peliculas"))
+            )
+            .bodyToMono(GenreListResponse.class);
+    }
+
+    public Mono<GenreListResponse> getTvGenres(String language) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/genre/tv/list")
+                    .queryParam("language", language)
+                    .build()
+            )
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(new RuntimeException("Error al obtener generos de series"))
+            )
+            .bodyToMono(GenreListResponse.class);
+    }
+
+    // --- Trending ---
+
+    public Mono<TrendingResponse> getTrending(
+        MediaType mediaType,
+        TimeWindow timeWindow,
+        Integer page
+    ) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/trending/{media_type}/{time_window}")
+                    .queryParam("page", page)
+                    .build(mediaType.name().toLowerCase(), timeWindow.name().toLowerCase())
+            )
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(new RuntimeException("Error al obtener trending"))
+            )
+            .bodyToMono(TrendingResponse.class);
+    }
+
+    // --- Collections ---
+
+    public Mono<CollectionDetails> getCollection(
+        Integer collectionId,
+        String language
+    ) {
+        return webClient
+            .get()
+            .uri(uriBuilder ->
+                uriBuilder
+                    .path("/collection/{id}")
+                    .queryParam("language", language)
+                    .build(collectionId)
+            )
+            .retrieve()
+            .onStatus(
+                status -> status.value() == 404,
+                response ->
+                    Mono.error(
+                        new TmdbResourceNotFound(
+                            "Coleccion con id " + collectionId + " no encontrada"
+                        )
+                    )
+            )
+            .onStatus(HttpStatusCode::isError, response ->
+                Mono.error(
+                    new ErrorFetchingMovieDetails(
+                        "Error al obtener coleccion con id " + collectionId
+                    )
+                )
+            )
+            .bodyToMono(CollectionDetails.class);
     }
 
     // --- Search ----
@@ -276,7 +641,7 @@ public class TmdbClient {
                 response ->
                     Mono.error(
                         new TmdbResourceNotFound(
-                            "Resultados no encontrados para la búsqueda: " +
+                            "Resultados no encontrados para la busqueda: " +
                                 query
                         )
                     )
@@ -284,7 +649,7 @@ public class TmdbClient {
             .onStatus(HttpStatusCode::isError, response ->
                 Mono.error(
                     new RuntimeException(
-                        "Error al realizar la búsqueda en TMDB con la query: " +
+                        "Error al realizar la busqueda en TMDB con la query: " +
                             query
                     )
                 )
@@ -309,12 +674,11 @@ public class TmdbClient {
         if (!results.isArray()) return out;
 
         for (JsonNode node : results) {
-            String type =
-                forcedType != null
-                    ? forcedType
-                    : node.path("media_type").asText(null);
+            String type = forcedType != null
+                ? forcedType
+                : node.path("media_type").asText(null);
 
-            if (type == null || type.equals("person")) continue;
+            if (type == null) continue;
 
             String title = node.has("title")
                 ? node.path("title").asText(null)
@@ -327,16 +691,25 @@ public class TmdbClient {
                 : node.path("first_air_date").asText("");
             Integer year = extractYear(date);
 
+            String posterPath = "person".equals(type)
+                ? emptyToNull(node.path("profile_path").asText(""))
+                : emptyToNull(node.path("poster_path").asText(""));
+
+            String knownFor = "person".equals(type)
+                ? emptyToNull(node.path("known_for_department").asText(""))
+                : type;
+
             out.add(
                 new SearchResult(
                     node.path("id").asLong(),
                     title,
                     emptyToNull(node.path("overview").asText("")),
-                    emptyToNull(node.path("poster_path").asText("")),
+                    posterPath,
                     type,
                     year,
                     node.path("popularity").asDouble(0),
-                    node.path("vote_average").asDouble(0)
+                    node.path("vote_average").asDouble(0),
+                    knownFor
                 )
             );
         }

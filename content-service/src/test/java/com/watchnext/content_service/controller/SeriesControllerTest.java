@@ -10,11 +10,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.watchnext.content_service.controller.tv.SeriesController;
+import com.watchnext.content_service.dto.common.AlternativeTitle;
 import com.watchnext.content_service.dto.common.CastMember;
+import com.watchnext.content_service.dto.common.CrewMember;
+import com.watchnext.content_service.dto.common.ExternalIds;
 import com.watchnext.content_service.dto.common.Genre;
+import com.watchnext.content_service.dto.common.MediaSummary;
 import com.watchnext.content_service.dto.common.Video;
-import com.watchnext.content_service.dto.tv.EpisodeSummary;
 import com.watchnext.content_service.dto.tv.TvDetails;
+import com.watchnext.content_service.dto.tv.TvEpisode;
 import com.watchnext.content_service.dto.tv.TvListResponse;
 import com.watchnext.content_service.dto.tv.TvSeason;
 import com.watchnext.content_service.dto.tv.TvSeasonDetail;
@@ -71,6 +75,22 @@ class SeriesControllerTest {
                 "Official Trailer",
                 true
             )
+        ),
+        List.of(
+            new CrewMember(66633L, "Vince Gilligan", "Creator", "/vg.jpg")
+        ),
+        new ExternalIds("tt0903747", null, null, null),
+        List.of(
+            new Genre(80, "crime")
+        ),
+        List.of(
+            new AlternativeTitle("BR", "Breaking Bad: A Química do Mal", "pt")
+        ),
+        List.of(
+            new MediaSummary(1399L, "Better Call Saul", "/bcs.jpg", 8.5, "tv", "2015-02-08")
+        ),
+        List.of(
+            new MediaSummary(1400L, "Ozark", "/ozark.jpg", 8.4, "tv", "2017-07-21")
         )
     );
 
@@ -81,15 +101,17 @@ class SeriesControllerTest {
         1,
         "/s1.jpg",
         List.of(
-            new EpisodeSummary(62085L, "Pilot", "Overview 1", 1, "/ep1.jpg"),
-            new EpisodeSummary(
-                62086L,
-                "Cat's in the Bag",
-                "Overview 2",
-                2,
-                null
+            new TvEpisode(62085, "Pilot", "Overview 1", 1, 1, "/ep1.jpg",
+                8.0, 120, "2008-01-20", 58,
+                List.of(new CrewMember(1223L, "Vince Gilligan", "Director", "/vg.jpg")),
+                List.of(new CastMember(924L, "John Koyama", "Emilio", "/jk.jpg", 1))
+            ),
+            new TvEpisode(62086, "Cat's in the Bag", "Overview 2", 2, 1, null,
+                7.5, 80, "2008-01-27", 48,
+                Collections.emptyList(), Collections.emptyList()
             )
-        )
+        ),
+        8.7
     );
 
     @BeforeEach
@@ -250,7 +272,7 @@ class SeriesControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.seasonNumber").value(1))
             .andExpect(jsonPath("$.episodes").isArray())
-            .andExpect(jsonPath("$.episodes[0].episodeNumber").value(1))
+            .andExpect(jsonPath("$.episodes[0].episode_number").value(1))
             .andExpect(jsonPath("$.episodes[0].name").value("Pilot"));
     }
 

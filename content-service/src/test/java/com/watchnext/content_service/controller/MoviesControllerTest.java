@@ -2,6 +2,7 @@ package com.watchnext.content_service.controller;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -10,8 +11,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.watchnext.content_service.controller.movies.MoviesController;
+import com.watchnext.content_service.dto.common.AlternativeTitle;
 import com.watchnext.content_service.dto.common.CastMember;
+import com.watchnext.content_service.dto.common.CrewMember;
+import com.watchnext.content_service.dto.common.ExternalIds;
 import com.watchnext.content_service.dto.common.Genre;
+import com.watchnext.content_service.dto.common.MediaSummary;
 import com.watchnext.content_service.dto.common.Video;
 import com.watchnext.content_service.dto.movies.MovieDetails;
 import com.watchnext.content_service.service.content.ContentService;
@@ -65,6 +70,24 @@ class MoviesControllerTest {
                 "Official Trailer",
                 true
             )
+        ),
+        List.of(
+            new CrewMember(7467L, "David Fincher", "Director", "/fincher.jpg")
+        ),
+        new ExternalIds("tt0137523", null, null, null),
+        List.of(
+            new Genre(3063, "fight club"),
+            new Genre(813, "insomnia"),
+            new Genre(282, "based on novel")
+        ),
+        List.of(
+            new AlternativeTitle("BR", "Clube da Luta", "pt")
+        ),
+        List.of(
+            new MediaSummary(680L, "Pulp Fiction", "/pulp.jpg", 8.5, "movie", "1994-10-14")
+        ),
+        List.of(
+            new MediaSummary(238L, "The Godfather", "/godfather.jpg", 8.7, "movie", "1972-03-14")
         )
     );
 
@@ -105,7 +128,7 @@ class MoviesControllerTest {
 
     @Test
     void getMovieDetails_defaultLanguageIsEnUs() throws Exception {
-        when(contentService.getMovieDetails(550, "en-US")).thenReturn(
+        when(contentService.getMovieDetails(eq(550), eq("en-US"))).thenReturn(
             Mono.just(SAMPLE)
         );
 

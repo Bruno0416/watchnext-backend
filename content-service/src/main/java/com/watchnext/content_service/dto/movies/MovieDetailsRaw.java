@@ -2,6 +2,7 @@ package com.watchnext.content_service.dto.movies;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.watchnext.content_service.dto.common.Credits;
+import com.watchnext.content_service.dto.common.ExternalIds;
 import com.watchnext.content_service.dto.common.Genre;
 import com.watchnext.content_service.dto.common.VideoWrapper;
 import java.util.List;
@@ -19,5 +20,14 @@ public record MovieDetailsRaw(
     @JsonProperty("vote_count") Integer voteCount,
     List<Genre> genres,
     Credits credits,
-    VideoWrapper videos
-) {}
+    VideoWrapper videos,
+    MovieListResponse recommendations,
+    MovieListResponse similar,
+    @JsonProperty("external_ids") ExternalIds externalIds,
+    Keywords keywords,
+    @JsonProperty("alternative_titles") AlternativeTitles alternativeTitles
+) {
+    public record Keywords(List<Genre> keywords) {}
+
+    public record AlternativeTitles(List<com.watchnext.content_service.dto.common.AlternativeTitle> titles) {}
+}
