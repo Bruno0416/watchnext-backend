@@ -5,6 +5,8 @@ import com.watchnext.feedback_service.entity.Review;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ReviewRepository extends JpaRepository<Review, UUID> {
@@ -19,6 +21,13 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     List<Review> findAllByContent_TmdbIdAndContent_MediaType(
         Integer tmdbId,
         MediaType mediaType
+    );
+
+    // metodo ver todas las reviews de un contenido con paginacion
+    Page<Review> findAllByContent_TmdbIdAndContent_MediaType(
+        Integer tmdbId,
+        MediaType mediaType,
+        Pageable pageable
     );
 
     // metodo para obtener todas las reviews del usuario

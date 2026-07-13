@@ -58,7 +58,7 @@ public class ReviewController {
         );
     }
 
-    // 3. GET /reviews/me → Obtener todas las reseñas del usuario autenticado
+    // 3. GET /reviews/me → Obtener todas las reseñas del usuario autenticado (TODO: mezclar endpoint con content-service)
     @GetMapping("/me")
     public ResponseEntity<List<ReviewResponse>> getAllUserReviews() {
         return ResponseEntity.ok(service.getMyReviews());

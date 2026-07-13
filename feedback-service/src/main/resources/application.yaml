@@ -18,6 +18,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+content-service:
+  api:
+    base-url: ${CONTENT_SERVICE_BASE_URL:http://content-service:8082/api/v1/content}
+
 application:
   security:
     jwt:
