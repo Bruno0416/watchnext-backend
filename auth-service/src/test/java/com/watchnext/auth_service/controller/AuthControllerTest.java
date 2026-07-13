@@ -26,7 +26,6 @@ import com.watchnext.auth_service.exceptions.UnsupportedProvider;
 import com.watchnext.auth_service.repository.UserRepository;
 import com.watchnext.auth_service.service.AuthService;
 import com.watchnext.auth_service.service.social.SocialAuthService;
-import com.watchnext.common.exceptions.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -38,7 +37,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(GlobalExceptionHandler.class)
+@Import({
+    com.watchnext.common.config.converters.StringToEnumConverterFactory.class,
+    com.watchnext.common.exceptions.GlobalExceptionHandler.class
+})
 class AuthControllerTest {
 
     @Autowired

@@ -5,6 +5,10 @@ spring:
   application:
     name: auth-service
 
+  jackson:
+      mapper:
+        accept-case-insensitive-enums: true
+
   datasource:
     url: ${AUTH_DB_URL:jdbc:postgresql://ep-floral-paper-acot5jab-pooler.sa-east-1.aws.neon.tech:5432/auth_db?sslmode=require}
     username: ${AUTH_DB_USER}
