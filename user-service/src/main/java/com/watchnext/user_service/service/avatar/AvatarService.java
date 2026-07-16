@@ -26,9 +26,12 @@ public class AvatarService {
     );
     private static final long MAX_BYTES = 2 * 1024 * 1024;
 
+    // ---------- gestion de archivos ----------
     public String upload(MultipartFile file, UUID profileId) {
+        // 1. validar el archivo entrante
         validate(file);
         try {
+            // 2. subir a cloudinary con parametros de recorte centrados en el rostro
             Map<?, ?> result = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap(
@@ -56,6 +59,7 @@ public class AvatarService {
     }
 
     public void delete(UUID profileId) {
+        // 1. eliminar recurso remoto mediante su id publico
         try {
             cloudinary
                 .uploader()
@@ -68,13 +72,16 @@ public class AvatarService {
         }
     }
 
+    // --- helper privado ---
     private void validate(MultipartFile file) {
+        // 1. lanzar error si el archivo es nulo vacio o supera el tamano maximo
         if (file == null || file.isEmpty()) throw new InvalidAvatar(
             "Archivo vacío"
         );
         if (file.getSize() > MAX_BYTES) throw new InvalidAvatar(
             "La imagen supera 2 MB"
         );
+        // 2. lanzar error si el formato no esta en la lista de permitidos
         if (!ALLOWED.contains(file.getContentType())) throw new InvalidAvatar(
             "Formato no permitido: " + file.getContentType()
         );

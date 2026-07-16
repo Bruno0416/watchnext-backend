@@ -26,6 +26,13 @@ public record OnboardingRequest(
     @Size(max = 500, message = "La bio no puede exceder 500 caracteres")
     String bio,
 
+    @NotNull(message = "El país es obligatorio")
+    @Pattern(
+        regexp = "^[A-Za-z]{2}$",
+        message = "El país debe ser un código ISO 3166-1 alfa-2 de 2 letras"
+    )
+    String country,
+
     @Size(max = 5, message = "Máximo 5 favoritos")
     List<@Valid FavoriteItemRequest> favorites
 ) {

@@ -13,6 +13,7 @@ public record ProfileResponse(
     String displayName,
     String bio,
     String avatarUrl,
+    String country,
     ProfileVisibility visibility,
     boolean onboardingCompleted,
     int followersCount,

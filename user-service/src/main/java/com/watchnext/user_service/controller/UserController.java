@@ -35,6 +35,7 @@ public class UserController {
 
     private final UserService service;
 
+    // ---------- perfil ----------
     @GetMapping("/me")
     public ResponseEntity<ProfileResponse> getMyProfile(
         @RequestParam(defaultValue = "en-US") String language
@@ -42,6 +43,7 @@ public class UserController {
         return ResponseEntity.ok(service.getMyProfile(language));
     }
 
+    // ---------- onboarding ----------
     @PutMapping(
         value = "/me/onboarding",
         consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -54,6 +56,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    // ---------- perfil ----------
     @PutMapping("/me")
     public ResponseEntity<ProfileResponse> updateProfile(
         @Valid @RequestBody UpdateProfileRequest request,
@@ -62,6 +65,7 @@ public class UserController {
         return ResponseEntity.ok(service.updateProfile(request, language));
     }
 
+    // ---------- avatar ----------
     @PostMapping(
         value = "/me/avatar",
         consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -79,6 +83,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    // ---------- favoritos ----------
     @PutMapping("/me/favorites")
     public ResponseEntity<Void> replaceFavorites(
         @Valid @RequestBody FavoritesRequest request
@@ -87,6 +92,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    // ---------- onboarding ----------
     @GetMapping("/username-available")
     public ResponseEntity<UsernameAvailabilityResponse> checkUsernameAvailable(
         @RequestParam String username
@@ -94,6 +100,7 @@ public class UserController {
         return ResponseEntity.ok(service.checkUsernameAvailable(username));
     }
 
+    // ---------- perfil ----------
     @GetMapping("/{username}")
     public ResponseEntity<?> getProfile(
         @PathVariable String username,
@@ -102,6 +109,7 @@ public class UserController {
         return ResponseEntity.ok(service.getProfile(username, language));
     }
 
+    // ---------- busqueda ----------
     @GetMapping("/search")
     public ResponseEntity<Page<ProfileSummaryResponse>> searchProfiles(
         @RequestParam String q,
@@ -110,6 +118,7 @@ public class UserController {
         return ResponseEntity.ok(service.searchProfiles(q, pageable));
     }
 
+    // ---------- seguidores y seguidos ----------
     @PostMapping("/{username}/follow")
     public ResponseEntity<Void> follow(@PathVariable String username) {
         service.follow(username);

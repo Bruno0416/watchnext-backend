@@ -9,6 +9,11 @@ spring:
       mapper:
         accept-case-insensitive-enums: true
 
+  data:
+    web:
+      pageable:
+        one-indexed-parameters: true
+
   servlet:
     multipart:
       max-file-size: 2MB
@@ -31,6 +36,10 @@ application:
   security:
     jwt:
       secret-key: ${JWT_SECRET}
+    service-token:
+      secret-key: ${SERVICE_JWT_SECRET}
+      expiration: 3m
+      cache-ttl: 150s
 
 eureka:
   client:

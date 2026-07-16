@@ -1,8 +1,10 @@
 package com.watchnext.user_service.service;
 
+import com.watchnext.common.context.UserContext;
 import com.watchnext.common.dto.ContentRefRequest;
 import com.watchnext.common.dto.internal.ContentBasicDetail;
 import com.watchnext.common.security.CurrentUser;
+import com.watchnext.common.util.CountryCodes;
 import com.watchnext.user_service.client.ContentServiceClient;
 import com.watchnext.user_service.dto.FavoriteItemRequest;
 import com.watchnext.user_service.dto.FavoritesRequest;
@@ -18,7 +20,9 @@ import com.watchnext.user_service.entity.Profile;
 import com.watchnext.user_service.enums.FollowStatus;
 import com.watchnext.user_service.enums.ProfileVisibility;
 import com.watchnext.user_service.exception.AlreadyFollowing;
+import com.watchnext.user_service.exception.CountryNotFound;
 import com.watchnext.user_service.exception.FollowRequestNotFound;
+import com.watchnext.user_service.exception.InvalidCountry;
 import com.watchnext.user_service.exception.ProfileNotFound;
 import com.watchnext.user_service.exception.UsernameAlreadyTaken;
 import com.watchnext.user_service.exception.UsernameReserved;
@@ -77,20 +81,21 @@ public class UserServiceImpl implements UserService {
 
     // --- Profile propio ---
 
+    // ---------- consultas de perfil ----------
     @Override
     @Transactional(readOnly = true)
     public ProfileResponse getMyProfile(String language) {
-        // 1. Obtener perfil del usuario.
+        // 1. obtener perfil del usuario
         Profile profile = profileRepo
             .findByUserId(CurrentUser.id())
             .orElseThrow(ProfileNotFound::new);
 
-        // 2. Mapear favoritos a referencias para el bulkfetch.
+        // 2. mapear favoritos a referencias para el bulkfetch
         List<ContentRefRequest> requests = contentRefMapper.toRequestList(
             profile.getFavorites()
         );
 
-        // 3. Hidratar metadata desde content-service y mapear a la respuesta.
+        // 3. hidratar metadata desde content-service y mapear a la respuesta
         List<ContentBasicDetail> contents = contentClient.fetchBulkContent(
             requests,
             language
@@ -99,16 +104,17 @@ public class UserServiceImpl implements UserService {
         return mapper.toResponse(profile, contents);
     }
 
+    // ---------- operaciones de perfil ----------
     @Override
     @Transactional
     public void completeOnboarding(
         OnboardingRequest request,
         MultipartFile avatar
     ) {
-        // 1. Validar usuario.
+        // 1. validar usuario
         String userId = CurrentUser.id();
 
-        // 2. Validar @username: no reservado y no tomado por otro perfil.
+        // 2. validar @username: no reservado y no tomado por otro perfil
         String username = request.username();
         if (RESERVED_USERNAMES.contains(username.toLowerCase())) {
             throw new UsernameReserved(username);
@@ -117,33 +123,37 @@ public class UserServiceImpl implements UserService {
             throw new UsernameAlreadyTaken(username);
         }
 
-        // 3. Crear nuevo perfil con datos base del onboarding.
+        // 3. validar y normalizar el codigo de pais obligatorio en onboarding
+        String country = normalizeAndValidateCountry(request.country());
+
+        // 4. crear nuevo perfil con datos base del onboarding
         Profile profile = Profile.builder()
             .userId(userId)
             .username(username)
             .visibility(request.visibility())
             .displayName(request.displayName())
             .bio(request.bio())
+            .country(country)
             .onboardingCompleted(true)
             .build();
 
-        // 4. Agregar el top N de favoritos si vienen en la request.
+        // 5. agregar el top n de favoritos si vienen en la request
         if (request.favorites() != null && !request.favorites().isEmpty()) {
-            // 4.1. Crear una copia de los favoritos entrantes y ordenarla basándose en el parámetro position.
+            // 5.1. crear una copia de los favoritos entrantes y ordenarla basándose en el parámetro position
             List<FavoriteItemRequest> sortedRequests = new java.util.ArrayList<>(request.favorites());
             sortedRequests.sort((a, b) -> {
                 int posA = a.position() != null ? a.position() : Integer.MAX_VALUE;
                 int posB = b.position() != null ? b.position() : Integer.MAX_VALUE;
                 return Integer.compare(posA, posB);
             });
-            // 4.2. Mapear a entidades y agregarlas a la lista del perfil.
+            // 5.2. mapear a entidades y agregarlas a la lista del perfil
             profile.getFavorites().addAll(contentRefMapper.toModelListFromFavorites(sortedRequests));
         }
 
-        // 5. Guardar para obtener el ID (UUID) necesario para el avatar.
+        // 6. guardar para obtener el id uuid necesario para el avatar
         profile = profileRepo.save(profile);
 
-        // 6. Subir avatar si viene en la request.
+        // 7. subir avatar si viene en la request
         if (avatar != null && !avatar.isEmpty()) {
             String url = avatarService.upload(avatar, profile.getId());
             profile.setAvatarUrl(url);
@@ -157,12 +167,11 @@ public class UserServiceImpl implements UserService {
         UpdateProfileRequest request,
         String language
     ) {
-        // 1. Obtener perfil del usuario autenticado.
+        // 1. recuperar perfil actual
         Profile profile = profileRepo
             .findByUserId(CurrentUser.id())
             .orElseThrow(ProfileNotFound::new);
-
-        // 2. Actualizar solo los campos presentes.
+        // 2. actualizar campos basico
         if (request.displayName() != null) profile.setDisplayName(
             request.displayName()
         );
@@ -170,16 +179,15 @@ public class UserServiceImpl implements UserService {
         if (request.visibility() != null) profile.setVisibility(
             request.visibility()
         );
-
-        // 3. Reconciliar favoritos solo si el campo fue enviado.
+        if (request.country() != null) profile.setCountry(
+            normalizeAndValidateCountry(request.country())
+        );
+        // 3. persistir cambios
         if (request.favorites() != null) {
             reconcileFavorites(profile, request.favorites());
         }
-
-        // 4. Persistir.
         profileRepo.save(profile);
-
-        // 5. Hidratar favoritos y devolver el perfil actualizado.
+        // 4. hidratar favoritos y devolver el perfil actualizado
         List<ContentRefRequest> requests = contentRefMapper.toRequestList(
             profile.getFavorites()
         );
@@ -190,14 +198,15 @@ public class UserServiceImpl implements UserService {
         return mapper.toResponse(profile, contents);
     }
 
+    // ---------- avatar ----------
     @Override
     @Transactional
     public void uploadAvatar(MultipartFile file) {
-        // 1. Obtener perfil del usuario autenticado.
+        // 1. obtener perfil del usuario autenticado
         Profile profile = profileRepo
             .findByUserId(CurrentUser.id())
             .orElseThrow(ProfileNotFound::new);
-        // 2. Subir archivo al object storage y guardar la URL.
+        // 2. subir archivo al object storage y guardar la url
         String url = avatarService.upload(file, profile.getId());
         profile.setAvatarUrl(url);
         profileRepo.save(profile);
@@ -206,40 +215,51 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteAvatar() {
-        // 1. Obtener perfil del usuario autenticado.
+        // 1. obtener perfil del usuario autenticado
         Profile profile = profileRepo
             .findByUserId(CurrentUser.id())
             .orElseThrow(ProfileNotFound::new);
-        // 2. Borrar archivo del object storage y limpiar la URL.
+        // 2. borrar archivo del object storage y limpiar la url
         avatarService.delete(profile.getId());
         profile.setAvatarUrl(null);
         profileRepo.save(profile);
     }
 
+    // ---------- favoritos ----------
     @Override
     @Transactional
     public void replaceFavorites(FavoritesRequest request) {
-        // 1. Obtener perfil del usuario autenticado.
+        // 1. obtener perfil del usuario autenticado
         Profile profile = profileRepo
             .findByUserId(CurrentUser.id())
             .orElseThrow(ProfileNotFound::new);
-        // 2. Reconciliar la lista entrante contra la persistida.
+        // 2. reconciliar la lista entrante contra la persistida
         reconcileFavorites(profile, request.items());
         profileRepo.save(profile);
+    }
+
+    // --- helper privado ---
+    private String normalizeAndValidateCountry(String rawCountry) {
+        // 1. normalizar a mayusculas y validar contra el set iso 3166-1 alpha-2
+        String normalized = CountryCodes.normalize(rawCountry);
+        if (!CountryCodes.isValid(normalized)) {
+            throw new InvalidCountry(rawCountry);
+        }
+        return normalized;
     }
 
     private void reconcileFavorites(
         Profile profile,
         List<FavoriteItemRequest> items
     ) {
-        // 1. Validar el tope maximo configurable.
+        // 1. validar el tope maximo configurable
         if (items.size() > favoritesMaxSize) {
             throw new IllegalArgumentException(
                 "Máximo " + favoritesMaxSize + " favoritos permitidos"
             );
         }
 
-        // 2. Validar que no haya tmdbId duplicados.
+        // 2. validar que no haya tmdbid duplicados
         long distinctIds = items
             .stream()
             .map(FavoriteItemRequest::tmdbId)
@@ -249,7 +269,7 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("No se permiten tmdbId duplicados");
         }
 
-        // 3. Ordenar por position explicito (nulls al final, orden estable).
+        // 3. ordenar por position explicito
         List<FavoriteItemRequest> sortedRequests = new java.util.ArrayList<>(items);
         sortedRequests.sort((a, b) -> {
             int posA = a.position() != null ? a.position() : Integer.MAX_VALUE;
@@ -257,18 +277,18 @@ public class UserServiceImpl implements UserService {
             return Integer.compare(posA, posB);
         });
 
-        // 4. Mapear a las nuevas entidades.
+        // 4. mapear a las nuevas entidades
         List<ContentRef> newFavorites = contentRefMapper.toModelListFromFavorites(
             sortedRequests
         );
 
-        // 5. Vaciamos la lista en la memoria de Hibernate
+        // 5. vaciamos la lista en la memoria de hibernate
         profile.getFavorites().clear();
 
-        // 6. Obligamos a hibernate a ejecutar el DELETE en la BD
+        // 6. obligamos a hibernate a ejecutar el delete en la bd
         profileRepo.saveAndFlush(profile);
 
-        // 7. Añadimos los nuevos favoritos limpios
+        // 7. añadimos los nuevos favoritos limpios
         profile.getFavorites().addAll(newFavorites);
 
         List<ContentRef> currentFavorites = profile.getFavorites();
@@ -291,18 +311,19 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        // 8. Limpiar elementos excedentes.
+        // 8. limpiar elementos excedentes
         while (currentFavorites.size() > newFavorites.size()) {
             currentFavorites.remove(currentFavorites.size() - 1);
         }
     }
 
+    // ---------- disponibilidad y busqueda ----------
     @Override
     @Transactional(readOnly = true)
     public UsernameAvailabilityResponse checkUsernameAvailable(
         String username
     ) {
-        // 1. Disponible solo si no es reservado y no existe en la BD.
+        // 1. disponible solo si no es reservado y no existe en la bd
         boolean available =
             !RESERVED_USERNAMES.contains(username.toLowerCase()) &&
             !profileRepo.existsByUsername(username);
@@ -561,5 +582,34 @@ public class UserServiceImpl implements UserService {
     public List<ProfileSummaryResponse> bulkGetProfiles(List<String> userIds) {
         // 2. Hidratar perfiles (username, avatar) para pintar autores de reviews.
         return mapper.toSummaryList(profileRepo.findAllByUserIdIn(userIds));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ProfileSummaryResponse> searchPublicProfiles(
+        String q,
+        Pageable pageable
+    ) {
+        // 1. buscar solo perfiles publicos por username o displayName
+        return profileRepo.searchPublicProfiles(
+            ProfileVisibility.PUBLIC,
+            q,
+            pageable
+        );
+    }
+
+	@Override
+	public String findCountryByUserId(String userId) {
+	    // 1. obtener pais
+	    return profileRepo.findCountryByUserId(userId).orElseThrow(CountryNotFound::new);
+	}
+
+    @Override
+    public UserContext getUserContext(String userId) {
+        return profileRepo.findByUserId(userId)
+            .map(p -> new UserContext(
+                p.getCountry() != null ? p.getCountry() : "US",
+                p.getRegion() != null ? p.getRegion() : "DEFAULT"))
+            .orElseThrow(CountryNotFound::new);
     }
 }

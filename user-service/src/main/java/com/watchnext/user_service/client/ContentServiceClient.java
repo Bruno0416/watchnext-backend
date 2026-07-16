@@ -2,6 +2,7 @@ package com.watchnext.user_service.client;
 
 import com.watchnext.common.dto.ContentRefRequest;
 import com.watchnext.common.dto.internal.ContentBasicDetail;
+import com.watchnext.common.security.internal.ServiceRestClientInterceptor;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -13,12 +14,19 @@ public class ContentServiceClient {
 
     private final RestClient restClient;
 
+    // ---------- configuracion ----------
     public ContentServiceClient(
-        @Value("${content-service.api.base-url}") String baseUrl
+        @Value("${content-service.api.base-url}") String baseUrl,
+        ServiceRestClientInterceptor serviceRestClientInterceptor
     ) {
-        this.restClient = RestClient.builder().baseUrl(baseUrl).build();
+        // 1. adjuntar el interceptor de token de servicio solo a este cliente dedicado
+        this.restClient = RestClient.builder()
+            .baseUrl(baseUrl)
+            .requestInterceptor(serviceRestClientInterceptor)
+            .build();
     }
 
+    // ---------- consumo api externa ----------
     public List<ContentBasicDetail> fetchBulkContent(
         List<ContentRefRequest> requests,
         String language

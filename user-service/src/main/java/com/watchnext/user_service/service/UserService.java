@@ -1,5 +1,6 @@
 package com.watchnext.user_service.service;
 
+import com.watchnext.common.context.UserContext;
 import com.watchnext.user_service.dto.FavoritesRequest;
 import com.watchnext.user_service.dto.InternalFollowingResponse;
 import com.watchnext.user_service.dto.OnboardingRequest;
@@ -51,8 +52,14 @@ public interface UserService {
 
     void rejectFollowRequest(String username);
 
-    // ──────────────────── Metodos Internos ────────────────────
+    // ──────────────────── metodos internos ────────────────────
     InternalFollowingResponse getFollowingUserIds(String authUserId);
 
     List<ProfileSummaryResponse> bulkGetProfiles(List<String> authUserIds);
+
+    Page<ProfileSummaryResponse> searchPublicProfiles(String q, Pageable pageable);
+
+    String findCountryByUserId(String userId);
+
+    UserContext getUserContext(String userId);
 }

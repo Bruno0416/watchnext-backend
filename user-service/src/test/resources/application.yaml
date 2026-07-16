@@ -1,4 +1,9 @@
 spring:
+  data:
+    web:
+      pageable:
+        one-indexed-parameters: true
+
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
@@ -35,6 +40,10 @@ application:
         expiration: 86400000
       refresh-token:
         expiration: 604800000
+    service-token:
+      secret-key: "clave-secreta-servicio-falsa-para-pruebas"
+      expiration: 3m
+      cache-ttl: 150s
 
 app:
   profile:

@@ -53,6 +53,12 @@ public class Profile {
     @Column(name = "avatar_url", length = 512)
     private String avatarUrl;
 
+    @Column(name = "country", length = 2)
+    private String country;
+
+    @Column(name = "region", length = 16)
+    private String region;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     @Builder.Default
