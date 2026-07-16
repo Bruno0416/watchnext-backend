@@ -6,6 +6,7 @@ import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
 import com.watchnext.common.enums.CodeType;
 import com.watchnext.common.enums.Language;
+import com.watchnext.email_service.ratelimit.EmailRateLimiter;
 import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,7 @@ public class EmailServiceImpl implements EmailService {
     private final Resend resendClient;
     private final TemplateEngine templateEngine;
     private final MessageSource messageSource;
+    private final EmailRateLimiter rateLimiter;
 
     @Value("${resend.mail.from}")
     private String fromAddress;
@@ -28,11 +30,13 @@ public class EmailServiceImpl implements EmailService {
     public EmailServiceImpl(
         Resend resendClient,
         TemplateEngine templateEngine,
-        MessageSource messageSource
+        MessageSource messageSource,
+        EmailRateLimiter rateLimiter
     ) {
         this.resendClient = resendClient;
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;
+        this.rateLimiter = rateLimiter;
     }
 
     @Override
@@ -42,23 +46,25 @@ public class EmailServiceImpl implements EmailService {
         Language language,
         CodeType type
     ) {
-        // 1. Configurar el idioma (Locale)
+        // 1. Verificar el limite de envios por destinatario + tipo de codigo
+        rateLimiter.checkAndRecord(to, type);
+        // 2. Configurar el idioma (Locale)
         Locale locale =
             language == Language.EN ? Locale.ENGLISH : Locale.of("es");
-        // 2. Preparar las variables para la plantilla HTML
+        // 3. Preparar las variables para la plantilla HTML
         Context context = new Context(locale);
         context.setVariable("code", code);
         context.setVariable("codeType", type);
-        // 3. Compilar el HTML final
+        // 4. Compilar el HTML final
         String htmlContent = templateEngine.process("base-email", context);
 
-        // 4. Obtener el asunto
+        // 5. Obtener el asunto
         String subjectKey =
             type == CodeType.CONFIRMATION
                 ? "email.confirmation.title"
                 : "email.recovery.title";
         String subject = messageSource.getMessage(subjectKey, null, locale);
-        // 5. Enviar el correo
+        // 6. Enviar el correo
         sendEmail(to, subject, htmlContent);
     }
 

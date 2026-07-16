@@ -41,6 +41,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
@@ -56,6 +61,11 @@
             <groupId>dev.akkinoc.util</groupId>
             <artifactId>yaml-resource-bundle</artifactId>
             <version>2.12.3</version>
+        </dependency>
+        <!-- Cache en memoria para el limitador de envios por destinatario -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
     </dependencies>
 

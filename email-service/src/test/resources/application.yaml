@@ -15,6 +15,10 @@ application:
       secret-key: "clave-secreta-falsa-solo-para-entorno-de-pruebas"
       access-token:
         expiration: 86400000
+    service-token:
+      secret-key: "clave-secreta-servicio-falsa-para-pruebas"
+      expiration: 3m
+      cache-ttl: 150s
 
 resend:
   api:
@@ -22,6 +26,11 @@ resend:
     key: fake-api-key-for-test
   mail:
     from: "fake-domain-for-test"
+
+email:
+  rate-limit:
+    cooldown-seconds: 60
+    max-per-hour: 5
 
 eureka:
   client:
