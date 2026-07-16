@@ -14,6 +14,8 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatchers;
 
 @Configuration
 @EnableWebSecurity
@@ -23,14 +25,21 @@ public class ResourceServerConfig {
     private String jwtSecret;
 
     @Bean
-    @Order(1)
+    @Order(10)
     public SecurityFilterChain publicFilterChain(HttpSecurity http)
         throws Exception {
         http.securityMatcher(
-            "/api/v1/content/**",
-            "/api/v1/*/internal/**",
-            "/error"
-        )
+                RequestMatchers.allOf(
+                    RequestMatchers.anyOf(
+                        PathPatternRequestMatcher.pathPattern("/api/v1/content/**"),
+                        PathPatternRequestMatcher.pathPattern("/api/v1/search/**"),
+                        PathPatternRequestMatcher.pathPattern("/error")
+                    ),
+                    RequestMatchers.not(
+                        PathPatternRequestMatcher.pathPattern("/api/v1/*/internal/**")
+                    )
+                )
+            )
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm ->
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -40,10 +49,15 @@ public class ResourceServerConfig {
     }
 
     @Bean
-    @Order(2)
+    @Order(20)
     public SecurityFilterChain securedFilterChain(HttpSecurity http)
         throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http.securityMatcher(
+                RequestMatchers.not(
+                    PathPatternRequestMatcher.pathPattern("/api/v1/*/internal/**")
+                )
+            )
+            .csrf(csrf -> csrf.disable())
             .sessionManagement(sm ->
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
