@@ -48,10 +48,10 @@ public class RatingController {
     // 3. GET /ratings → Obtener la calificación del usuario autenticado para un contenido específico
     @GetMapping
     public ResponseEntity<RatingResponse> getRating(
-        @NotNull(message = "tmdbId no puede estar vacio") @Positive(
-            message = "tmdbId no puede ser un numero negativo"
+        @NotNull(message = "tmdbId no puede estar vacío") @Positive(
+            message = "tmdbId no puede ser un número negativo"
         ) @RequestParam("tmdbId") Integer tmdbId,
-        @NotNull(message = "mediaType no puede estar vacio") @RequestParam(
+        @NotNull(message = "mediaType no puede estar vacío") @RequestParam(
             "mediaType"
         ) MediaType mediaType
     ) {
@@ -61,10 +61,10 @@ public class RatingController {
     // 4. DELETE /ratings → Eliminar la calificación del usuario autenticado para un contenido específico
     @DeleteMapping
     public ResponseEntity<Void> deleteRating(
-        @NotNull(message = "tmdbId no puede estar vacio") @Positive(
-            message = "tmdbId no puede ser un numero negativo"
+        @NotNull(message = "tmdbId no puede estar vacío") @Positive(
+            message = "tmdbId no puede ser un número negativo"
         ) @RequestParam("tmdbId") Integer tmdbId,
-        @NotNull(message = "mediaType no puede estar vacio") @RequestParam(
+        @NotNull(message = "mediaType no puede estar vacío") @RequestParam(
             "mediaType"
         ) MediaType mediaType
     ) {

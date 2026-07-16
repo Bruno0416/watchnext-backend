@@ -46,10 +46,10 @@ public class ReviewController {
     // 2. GET /reviews → Obtener las reseñas públicas de un contenido específico (param: tmdbId | param: mediaType) (sin auth)
     @GetMapping
     public ResponseEntity<List<ReviewResponse>> getAllContentReviews(
-        @NotNull(message = "tmdbId no puede estar vacio") @Positive(
-            message = "tmdbId no puede ser un numero negativo"
+        @NotNull(message = "tmdbId no puede estar vacío") @Positive(
+            message = "tmdbId no puede ser un número negativo"
         ) @RequestParam("tmdbId") Integer tmdbId,
-        @NotNull(message = "mediaType no puede estar vacio") @RequestParam(
+        @NotNull(message = "mediaType no puede estar vacío") @RequestParam(
             "mediaType"
         ) MediaType mediaType
     ) {
@@ -67,7 +67,7 @@ public class ReviewController {
     // 4. PUT /reviews/update/{id} → Editar una reseña propia por ID
     @PutMapping("/update/{id}")
     public ResponseEntity<Void> updateReview(
-        @NotNull(message = "El id no puede estar vacio") @PathVariable UUID id,
+        @NotNull(message = "El id no puede estar vacío") @PathVariable UUID id,
         @Valid @RequestBody ReviewUpdateRequest request
     ) {
         service.updateReview(id, request);
@@ -77,7 +77,7 @@ public class ReviewController {
     // 5. DELETE /reviews/{id} → Eliminar una reseña propia por ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReview(
-        @NotNull(message = "El id no puede estar vacio") @PathVariable UUID id
+        @NotNull(message = "El id no puede estar vacío") @PathVariable UUID id
     ) {
         service.deleteReview(id);
         return ResponseEntity.noContent().build();
