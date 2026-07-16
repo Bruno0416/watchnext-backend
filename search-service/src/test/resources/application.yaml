@@ -1,0 +1,17 @@
+eureka:
+  client:
+    enabled: false
+
+application:
+  security:
+    jwt:
+      secret-key: "clave-secreta-falsa-solo-para-entorno-de-pruebas"
+    service-token:
+      secret-key: "clave-secreta-servicio-falsa-para-pruebas"
+      expiration: 3m
+      cache-ttl: 150s
+
+search:
+  upstream:
+    content-timeout: 5s
+    user-timeout: 5s

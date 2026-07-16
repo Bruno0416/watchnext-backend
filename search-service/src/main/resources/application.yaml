@@ -1,0 +1,32 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: search-service
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+    service-token:
+      secret-key: ${SERVICE_JWT_SECRET}
+      expiration: 3m
+      cache-ttl: 150s
+
+
+
+search:
+  upstream:
+    content-timeout: 5s
+    user-timeout: 5s
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://admin:${EUREKA_ADMIN_PASSWD}@eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
