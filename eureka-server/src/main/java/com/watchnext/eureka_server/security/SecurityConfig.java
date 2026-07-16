@@ -17,7 +17,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain apiFilterChain(HttpSecurity http)
         throws Exception {
-        http.securityMatcher("/eureka/apps/**")
+        http.securityMatcher("/eureka/**")
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
             .httpBasic(Customizer.withDefaults());
