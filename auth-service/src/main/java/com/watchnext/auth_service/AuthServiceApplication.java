@@ -7,7 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
     scanBasePackages = {
         "com.watchnext.auth_service",
         "com.watchnext.common.exceptions",
-        "com.watchnext.common.config"
+        "com.watchnext.common.config",
+        "com.watchnext.common.security.internal"
     }
 )
 public class AuthServiceApplication {

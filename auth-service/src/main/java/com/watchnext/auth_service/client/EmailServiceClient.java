@@ -3,6 +3,7 @@ package com.watchnext.auth_service.client;
 import com.watchnext.common.dto.internal.ConfirmationEmailRequest;
 import com.watchnext.common.dto.internal.RecoveryEmailRequest;
 import com.watchnext.common.enums.Language;
+import com.watchnext.common.security.internal.ServiceRestClientInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -13,9 +14,14 @@ public class EmailServiceClient {
     private final RestClient restClient;
 
     public EmailServiceClient(
-        @Value("${email-service.api.base-url}") String baseUrl
+        @Value("${email-service.api.base-url}") String baseUrl,
+        ServiceRestClientInterceptor serviceRestClientInterceptor
     ) {
-        this.restClient = RestClient.builder().baseUrl(baseUrl).build();
+        // 1. adjuntar el interceptor de token de servicio solo a este cliente dedicado
+        this.restClient = RestClient.builder()
+            .baseUrl(baseUrl)
+            .requestInterceptor(serviceRestClientInterceptor)
+            .build();
     }
 
     public void sendConfirmation(String to, String code, Language language) {

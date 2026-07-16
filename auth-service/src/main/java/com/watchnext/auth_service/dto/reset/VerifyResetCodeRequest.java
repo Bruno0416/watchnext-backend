@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public record VerifyResetCodeRequest(
     @NotBlank(message = "El correo es obligatorio")
-    @Email(message = "Debe ser un correo valido: email@example.com")
+    @Email(message = "Debe ser un correo válido: email@example.com")
     String email,
-    @NotBlank String code
+    @NotBlank(message = "El código es obligatorio") String code
 ) {}

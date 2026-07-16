@@ -6,9 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record ResendCodeRequest(
-    @NotBlank(message = "El correo no puede estar vacio")
-    @Email(message = "Debe ser un correo valido: email@example.com")
+    @NotBlank(message = "El correo no puede estar vacío")
+    @Email(message = "Debe ser un correo válido: email@example.com")
     String email,
 
-    @NotNull(message = "El tipo de codigo no puede estar vacio") CodeType type
+    @NotNull(message = "El tipo de código no puede estar vacío") CodeType type
 ) {}

@@ -17,7 +17,6 @@ import com.watchnext.auth_service.dto.RegisterRequest;
 import com.watchnext.auth_service.dto.social.SocialLoginRequest;
 import com.watchnext.auth_service.enums.AuthProvider;
 import com.watchnext.auth_service.exceptions.EmailAlreadyInUse;
-import com.watchnext.auth_service.exceptions.EmailNotVerified;
 import com.watchnext.auth_service.exceptions.InvalidCredentials;
 import com.watchnext.auth_service.exceptions.InvalidRefreshToken;
 import com.watchnext.auth_service.exceptions.InvalidSocialToken;
@@ -395,22 +394,138 @@ class AuthControllerTest {
             .andExpect(status().isBadRequest());
     }
 
+    // -------------- 5. CONFIRM EMAIL --------------
+
     @Test
-    void testOauthLoginEmailNotVerified() throws Exception {
+    void testConfirmEmail() throws Exception {
         // 1. preparar request
-        var request = new SocialLoginRequest("valid-token-unverified-email");
-        when(socialAuthService.authenticate(any(), any())).thenThrow(
-            new EmailNotVerified("user@example.com")
-        );
+        var request = new com.watchnext.auth_service.dto.ConfirmEmailRequest("user@example.com", "123456");
+        doNothing().when(authService).confirmEmail(any());
 
         // 2. ejecutar y verificar
-        // 409
+        // 200
         mockMvc
             .perform(
-                post("/api/v1/auth/oauth/google")
+                post("/api/v1/auth/confirm-email")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
-            .andExpect(status().isConflict());
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void testConfirmEmailInvalidCode() throws Exception {
+        // 1. preparar request
+        var request = new com.watchnext.auth_service.dto.ConfirmEmailRequest("user@example.com", "wrong");
+        doThrow(new com.watchnext.auth_service.exceptions.InvalidConfirmationCode("Código inválido"))
+            .when(authService)
+            .confirmEmail(any());
+
+        // 2. ejecutar y verificar
+        // 400
+        mockMvc
+            .perform(
+                post("/api/v1/auth/confirm-email")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+            .andExpect(status().isBadRequest());
+    }
+
+    // -------------- 6. RESEND CODE --------------
+
+    @Test
+    void testResendCode() throws Exception {
+        // 1. preparar request
+        var request = new com.watchnext.auth_service.dto.ResendCodeRequest("user@example.com", com.watchnext.common.enums.CodeType.CONFIRMATION);
+        doNothing().when(authService).resendCode(any(), any());
+
+        // 2. ejecutar y verificar
+        // 200
+        mockMvc
+            .perform(
+                post("/api/v1/auth/resend-code")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void testResendCodeUserNotFound() throws Exception {
+        // 1. preparar request
+        var request = new com.watchnext.auth_service.dto.ResendCodeRequest("notfound@example.com", com.watchnext.common.enums.CodeType.CONFIRMATION);
+        doThrow(new com.watchnext.auth_service.exceptions.UserNotFound())
+            .when(authService)
+            .resendCode(any(), any());
+
+        // 2. ejecutar y verificar
+        // 404
+        mockMvc
+            .perform(
+                post("/api/v1/auth/resend-code")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+            .andExpect(status().isNotFound());
+    }
+
+    // -------------- 7. REQUEST PASSWORD RESET --------------
+
+    @Test
+    void testRequestPasswordReset() throws Exception {
+        // 1. preparar request
+        var request = new com.watchnext.auth_service.dto.reset.ResetPasswordRequest("user@example.com");
+        doNothing().when(authService).requestPasswordReset(any(), any());
+
+        // 2. ejecutar y verificar
+        // 200
+        mockMvc
+            .perform(
+                post("/api/v1/auth/password/request")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+            .andExpect(status().isOk());
+    }
+
+    // -------------- 8. VERIFY RESET CODE --------------
+
+    @Test
+    void testVerifyResetCode() throws Exception {
+        // 1. preparar request y respuesta
+        var request = new com.watchnext.auth_service.dto.reset.VerifyResetCodeRequest("user@example.com", "123456");
+        var response = new com.watchnext.auth_service.dto.reset.VerifyResetTokenResponse("reset-token");
+        when(authService.verifyResetCode(any())).thenReturn(response);
+
+        // 2. ejecutar y verificar
+        // 200
+        mockMvc
+            .perform(
+                post("/api/v1/auth/password/verify")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.resetToken").value("reset-token"));
+    }
+
+    // -------------- 9. RESET PASSWORD --------------
+
+    @Test
+    void testResetPassword() throws Exception {
+        // 1. preparar request
+        var request = new com.watchnext.auth_service.dto.reset.NewPasswordRequest("reset-token", "newpassword123");
+        doNothing().when(authService).resetPassword(any());
+
+        // 2. ejecutar y verificar
+        // 200
+        mockMvc
+            .perform(
+                post("/api/v1/auth/password/reset")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+            .andExpect(status().isOk());
     }
 }

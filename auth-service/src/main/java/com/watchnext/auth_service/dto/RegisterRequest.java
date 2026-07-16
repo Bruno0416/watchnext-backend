@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
     @NotBlank(message = "El correo es obligatorio")
-    @Email(message = "Debe ser un correo valido: email@example.com")
+    @Email(message = "Debe ser un correo válido: email@example.com")
     String email,
 
     @NotBlank(message = "La contraseña es obligatoria")

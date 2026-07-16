@@ -38,6 +38,10 @@ application:
         expiration: ${JWT_ACCESS_EXPIRATION}
       refresh-token:
         expiration: ${JWT_REFRESH_EXPIRATION}
+    service-token:
+      secret-key: ${SERVICE_JWT_SECRET}
+      expiration: 3m
+      cache-ttl: 150s
 
 auth:
   oauth:

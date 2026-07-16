@@ -4,9 +4,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public record LoginRequest(
-    @NotBlank(message = "El correo no puede estar vacio")
-    @Email(message = "Debe ser un correo valido: email@example.com")
+    @NotBlank(message = "El correo no puede estar vacío")
+    @Email(message = "Debe ser un correo válido: email@example.com")
     String email,
 
-    @NotBlank(message = "La contraseña no puede estar vacia") String password
+    @NotBlank(message = "La contraseña no puede estar vacía") String password
 ) {}
