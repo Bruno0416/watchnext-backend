@@ -44,6 +44,8 @@ services:
         condition: service_started
       email-service:
         condition: service_started
+      search-service:
+        condition: service_started
       eureka-server:
         condition: service_healthy
     env_file: .env
@@ -72,6 +74,8 @@ services:
       dockerfile: content-service/Dockerfile
     container_name: watch_next_content
     env_file: .env
+    environment:
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=DEBUG
     depends_on:
       redis:
         condition: service_started
@@ -122,6 +126,8 @@ services:
       dockerfile: user-service/Dockerfile
     container_name: watch_next_user
     env_file: .env
+    environment:
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=TRACE
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -138,6 +144,23 @@ services:
     depends_on:
       eureka-server:
         condition: service_healthy
+    networks:
+      - watch_next-network
+
+  # ---- SEARCH ----
+  search-service:
+    build:
+      context: .
+      dockerfile: search-service/Dockerfile
+    container_name: watch_next_search
+    env_file: .env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      content-service:
+        condition: service_started
+      user-service:
+        condition: service_started
     networks:
       - watch_next-network
 

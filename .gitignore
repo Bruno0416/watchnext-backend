@@ -1,17 +1,37 @@
-# Documentacion
-docs/
-
-# Variables de entorno
-.env
-
-# Carpetas de compilación de Maven
+# --- Artefactos de compilación ---
 target/
-*/target/
+*.jar
+*.jar.original
+*.class
 
-# Archivos del IDE (Zed, IntelliJ, VSCode, etc.)
+# --- Configuración de IDEs ---
+# Eclipse
+.project
+.classpath
+.settings/
+.factorypath
+
+# IntelliJ
 .idea/
-.vscode/
 *.iml
-.DS_Store
+
+# VS Code
+.vscode/
+
+# --- Temporales y logs ---
+*.log
+*.tmp
+*.bak
 .flattened-pom.xml
+createdFiles.lst
+inputFiles.lst
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+docs
 .serena
+.env
+.opencode
+openspec

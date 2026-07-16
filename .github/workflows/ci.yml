@@ -19,6 +19,7 @@ jobs:
       email: ${{ steps.filter.outputs.email }}
       gateway: ${{ steps.filter.outputs.gateway }}
       eureka: ${{ steps.filter.outputs.eureka }}
+      search: ${{ steps.filter.outputs.search }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -62,6 +63,11 @@ jobs:
               - '.github/workflows/ci.yml'
             eureka:
               - 'eureka-server/**'
+              - 'common/**'
+              - 'pom.xml'
+              - '.github/workflows/ci.yml'
+            search:
+              - 'search-service/**'
               - 'common/**'
               - 'pom.xml'
               - '.github/workflows/ci.yml'
@@ -217,3 +223,22 @@ jobs:
         run: ./mvnw install -N
       - name: Compilar Eureka Server
         run: ./mvnw -pl eureka-server -am package
+
+  # 10. Compila Search Service (Solo si hubo cambios)
+  build-search:
+    needs: changes
+    if: ${{ needs.changes.outputs.search == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+      - name: Instalar root POM
+        run: ./mvnw install -N
+      - name: Compilar Search Service
+        run: ./mvnw -pl search-service -am package
