@@ -43,6 +43,7 @@ public class ListServiceImpl implements ListService {
     // ------- Clientes -------
     private final ContentServiceClient contentClient;
 
+    // ---------- gestion de listas ----------
     @Override
     @Transactional
     public void createList(CreateListRequest request) {
@@ -76,6 +77,7 @@ public class ListServiceImpl implements ListService {
         }
     }
 
+    // ---------- gestion de items ----------
     @Override
     @Transactional
     public void addItems(UUID listId, ItemsRequest request) {
@@ -89,7 +91,7 @@ public class ListServiceImpl implements ListService {
         // 2. agregar items a la lista
         record ItemKey(Integer tmdbId, MediaType mediaType) {}
 
-        // 3. Cargamos los items que YA existen en la lista actual en un Set.
+        // 3. cargamos los items que ya existen en la lista actual en un set
         Set<ItemKey> existingItems = list
             .getItems()
             .stream()
@@ -101,7 +103,7 @@ public class ListServiceImpl implements ListService {
             )
             .collect(Collectors.toSet());
 
-        // 4. Filtramos la request para quedarnos SOLO con los items nuevos.
+        // 4. filtramos la request para quedarnos solo con los items nuevos
         List<ContentRefRequest> itemsToAdd = request
             .items()
             .stream()
@@ -113,14 +115,14 @@ public class ListServiceImpl implements ListService {
             )
             .toList();
 
-        // 5. Si la lista original tenia items, pero despues de filtrar quedo vacia
+        // 5. si la lista original tenia items pero despues de filtrar quedo vacia
         if (itemsToAdd.isEmpty() && !request.items().isEmpty()) {
             throw new ItemAlreadyExists(
-                "Todos los contenidos enviados ya están en la lista"
+                "Todos los contenidos enviados ya estan en la lista"
             );
         }
 
-        // 6. Agregamos únicamente los items que pasaron el filtro
+        // 6. agregamos unicamente los items que pasaron el filtro
         itemsToAdd.forEach(ref ->
             list.addItem(
                 ListItem.builder()
@@ -152,6 +154,7 @@ public class ListServiceImpl implements ListService {
         listItemRepo.deleteByListIdAndContentIn(listId, contentsToRemove);
     }
 
+    // ---------- eliminacion ----------
     @Override
     @Transactional
     public void deleteList(UUID listId) {
@@ -164,6 +167,7 @@ public class ListServiceImpl implements ListService {
         }
     }
 
+    // ---------- consultas ----------
     @Override
     public MyListsResponse getMyLists() {
         // 1. obtener usuario

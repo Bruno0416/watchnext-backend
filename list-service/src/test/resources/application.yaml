@@ -27,3 +27,7 @@ application:
         expiration: 86400000
       refresh-token:
         expiration: 604800000
+    service-token:
+      secret-key: "clave-secreta-servicio-falsa-para-pruebas"
+      expiration: 3m
+      cache-ttl: 150s

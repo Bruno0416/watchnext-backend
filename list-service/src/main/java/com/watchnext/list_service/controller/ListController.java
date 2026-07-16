@@ -28,8 +28,7 @@ public class ListController {
 
     private final ListService service;
 
-    // ----- ENDPOINTS -----
-    // 1. crear lista
+    // ---------- creacion ----------
     @PostMapping("/create")
     public ResponseEntity<Void> createList(
         @Valid @RequestBody CreateListRequest request
@@ -38,7 +37,7 @@ public class ListController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    // 2. agregar lista de items
+    // ---------- items ----------
     @PostMapping("/add-items/{listId}")
     public ResponseEntity<Void> addItems(
         @PathVariable UUID listId,
@@ -48,7 +47,6 @@ public class ListController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    // 3. eliminar lista de items
     @DeleteMapping("/remove-items/{listId}")
     public ResponseEntity<Void> removeItems(
         @PathVariable UUID listId,
@@ -58,20 +56,19 @@ public class ListController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    // 4. eliminar lista
+    // ---------- eliminacion ----------
     @DeleteMapping("/delete/{listId}")
     public ResponseEntity<Void> deleteList(@PathVariable UUID listId) {
         service.deleteList(listId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    // 5. ver mis listas
+    // ---------- consultas ----------
     @GetMapping("/my-lists")
     public ResponseEntity<MyListsResponse> getMyLists() {
         return ResponseEntity.ok(service.getMyLists());
     }
 
-    // 6. detalle lista
     @GetMapping("/{listId}")
     public ResponseEntity<ListDetailResponse> getListDetails(
         @PathVariable UUID listId,
