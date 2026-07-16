@@ -1,9 +1,15 @@
 server:
   port: 8080
+  forward-headers-strategy: none
 
 spring:
   application:
     name: gateway
+
+  threads:
+      virtual:
+        enabled: true
+
   cloud:
     gateway:
       server:
@@ -13,16 +19,18 @@ spring:
               uri: lb://auth-service
               predicates:
                 - Path=/api/v1/auth/**
-            - id: content-service
-              uri: lb://content-service
-              predicates:
-                - Path=/api/v1/content/**
             - id: content-service-internal-block
               uri: no://op
+              order: -1
               predicates:
                 - Path=/api/v1/content/internal/**
               filters:
                 - SetStatus=403
+            - id: content-service
+              uri: lb://content-service
+              order: 0
+              predicates:
+                - Path=/api/v1/content/**
             - id: list-service
               uri: lb://list-service
               predicates:
@@ -33,23 +41,40 @@ spring:
                 - Path=/api/v1/feedback/**
             - id: user-service-internal-block
               uri: no://op
+              order: -1
               predicates:
-                - Path=/api/v1/internal/**
+                - Path=/api/v1/users/internal/**
               filters:
                 - SetStatus=403
             - id: user-service
               uri: lb://user-service
+              order: 0
               predicates:
                 - Path=/api/v1/users/**
             - id: email-service-internal-block
               uri: no://op
+              order: -1
               predicates:
                 - Path=/api/v1/email/internal/**
+              filters:
+                - SetStatus=403
+            - id: search-service
+              uri: lb://search-service
+              predicates:
+                - Path=/api/v1/search/**
 
 application:
   security:
     jwt:
       secret-key: ${JWT_SECRET}
+    service-token:
+      secret-key: ${SERVICE_JWT_SECRET}
+      expiration: 3m
+      cache-ttl: 150s
+
+user-service:
+  api:
+    base-url: ${USER_SERVICE_BASE_URL:http://user-service:8085/api/v1/users/internal}
 
 eureka:
   client:

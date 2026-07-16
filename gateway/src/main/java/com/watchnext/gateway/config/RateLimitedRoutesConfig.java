@@ -17,7 +17,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 @Configuration
 public class RateLimitedRoutesConfig {
 
-    // 1. AUTH — endpoints sensibles
+    // 1. AUTH - endpoints sensibles
     @Bean
     public RouterFunction<ServerResponse> authServiceRoute() {
         return route("auth-service")
@@ -27,7 +27,7 @@ public class RateLimitedRoutesConfig {
             .build();
     }
 
-    // 2. CONTENT — lecturas cacheadas (Redis 24h)
+    // 2. CONTENT - lecturas cacheadas (Redis 24h)
     @Bean
     public RouterFunction<ServerResponse> contentServiceRoute() {
         return route("content-service")
@@ -37,7 +37,7 @@ public class RateLimitedRoutesConfig {
             .build();
     }
 
-    // 3. LIST — datos de usuario en DB
+    // 3. LIST - datos de usuario en DB
     @Bean
     public RouterFunction<ServerResponse> listServiceRoute() {
         return route("list-service")
@@ -47,7 +47,7 @@ public class RateLimitedRoutesConfig {
             .build();
     }
 
-    // 4. USER — /users/me + favoritos + follows
+    // 4. USER - /users/me + favoritos + follows
     @Bean
     public RouterFunction<ServerResponse> userServiceRoute() {
         return route("user-service")
@@ -57,7 +57,7 @@ public class RateLimitedRoutesConfig {
             .build();
     }
 
-    // 5. FEEDBACK — reseñas/ratings
+    // 5. FEEDBACK - reseñas/ratings
     @Bean
     public RouterFunction<ServerResponse> feedbackServiceRoute() {
         return route("feedback-service")

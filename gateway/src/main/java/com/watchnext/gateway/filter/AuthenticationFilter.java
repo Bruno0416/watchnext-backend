@@ -37,7 +37,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         // 1. definir rutas publicas
-        List<String> publicPaths = List.of("/api/v1/auth", "/api/v1/content");
+        List<String> publicPaths = List.of("/api/v1/auth", "/api/v1/content", "/api/v1/search");
 
         // 2. validar si la ruta empieza con alguna de las rutas publicas
         boolean isPublicPath = publicPaths

@@ -1,5 +1,6 @@
 package com.watchnext.gateway.util;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -25,5 +26,10 @@ public class JwtUtil {
 
     public void validateToken(final String token) {
         Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
+    }
+
+    public String extractUserId(final String token) {
+        Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        return claims.get("id", String.class);
     }
 }
