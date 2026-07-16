@@ -7,6 +7,8 @@ import com.watchnext.content_service.dto.search.ParsedQuery;
 import com.watchnext.content_service.dto.search.SearchResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
@@ -36,11 +38,12 @@ public class SearchCacheService {
         this.props = props;
     }
 
-    public Mono<SearchResponse> get(ParsedQuery query, String language) {
+    // ---------- gestion de cache ----------
+    public Mono<SearchResponse> get(ParsedQuery query, String language, Set<String> types) {
         // 1. buscar json en redis usando la llave
         return redis
             .opsForValue()
-            .get(buildKey(query, language))
+            .get(buildKey(query, language, types))
             .flatMap(json -> {
                 try {
                     // 2. parsear json a objeto de respuesta
@@ -62,6 +65,7 @@ public class SearchCacheService {
     public Mono<SearchResponse> put(
         ParsedQuery query,
         String language,
+        Set<String> types,
         SearchResponse response
     ) {
         // 1. determinar tiempo de expiracion basado en precision de busqueda
@@ -75,7 +79,7 @@ public class SearchCacheService {
 
             return redis
                 .opsForValue()
-                .set(buildKey(query, language), json, ttl)
+                .set(buildKey(query, language, types), json, ttl)
                 .thenReturn(response);
         } catch (JsonProcessingException e) {
             log.warn(
@@ -86,16 +90,22 @@ public class SearchCacheService {
         }
     }
 
-    private String buildKey(ParsedQuery query, String language) {
-        // 1. construir string base combinando parametros principales
+    // --- helper privado ---
+    private String buildKey(ParsedQuery query, String language, Set<String> types) {
+        // 1. ordenar types para consistencia
+        String typesStr = types.stream()
+            .sorted()
+            .collect(Collectors.joining(","));
+
+        // 2. construir string base combinando parametros principales
         String raw = String.join(
             "|",
             query.cleanQuery(),
             String.valueOf(query.year()),
-            String.valueOf(query.mediaType()),
+            typesStr,
             language
         );
-        // 2. generar hash md5 para usar como sufijo en la llave
+        // 3. generar hash md5 para usar como sufijo en la llave
         String hash = DigestUtils.md5DigestAsHex(
             raw.getBytes(StandardCharsets.UTF_8)
         );

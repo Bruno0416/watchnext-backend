@@ -20,6 +20,7 @@ public class ContentBulkServiceImpl implements ContentBulkService {
 
     private final ContentService contentService;
 
+    // ---------- procesamiento masivo ----------
     @Override
     public Mono<List<ContentBasicDetail>> fetchBulkContent(
         List<ContentRefRequest> requests,
@@ -33,6 +34,7 @@ public class ContentBulkServiceImpl implements ContentBulkService {
             .collectList();
     }
 
+    // --- helper privado ---
     private Mono<ContentBasicDetail> fetchOne(
         ContentRefRequest ref,
         String language

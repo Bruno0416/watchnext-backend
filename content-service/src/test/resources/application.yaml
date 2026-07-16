@@ -7,12 +7,22 @@ tmdb:
     key: "test-key"
     base-url: "https://api.themoviedb.org/3"
 
+streaming-availability:
+  api:
+    base-url: "https://streaming-availability.p.rapidapi.com"
+    host: "streaming-availability.p.rapidapi.com"
+    key: "test-streaming-availability-key"
+
 application:
   security:
     jwt:
       secret-key: "clave-secreta-falsa-solo-para-entorno-de-pruebas"
       access-token:
         expiration: 86400000
+    service-token:
+      secret-key: "clave-secreta-servicio-falsa-para-pruebas"
+      expiration: 3m
+      cache-ttl: 150s
 
 spring:
   data:

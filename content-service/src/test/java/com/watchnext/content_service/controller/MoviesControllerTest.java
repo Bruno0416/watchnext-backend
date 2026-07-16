@@ -3,6 +3,8 @@ package com.watchnext.content_service.controller;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -10,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.watchnext.common.security.GatewayHeaders;
 import com.watchnext.content_service.controller.movies.MoviesController;
 import com.watchnext.content_service.dto.common.AlternativeTitle;
 import com.watchnext.content_service.dto.common.CastMember;
@@ -18,6 +21,7 @@ import com.watchnext.content_service.dto.common.ExternalIds;
 import com.watchnext.content_service.dto.common.Genre;
 import com.watchnext.content_service.dto.common.MediaSummary;
 import com.watchnext.content_service.dto.common.Video;
+import com.watchnext.content_service.dto.common.WatchProvider;
 import com.watchnext.content_service.dto.movies.MovieDetails;
 import com.watchnext.content_service.service.content.ContentService;
 import java.util.List;
@@ -29,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import reactor.core.publisher.Mono;
 
@@ -106,7 +111,7 @@ class MoviesControllerTest {
 
         MvcResult mvcResult = mockMvc
             .perform(
-                get("/api/v1/content/movies/550").accept(
+                authorizedGet("/api/v1/content/movies/550").accept(
                     MediaType.APPLICATION_JSON
                 )
             )
@@ -134,7 +139,7 @@ class MoviesControllerTest {
 
         MvcResult mvcResult = mockMvc
             .perform(
-                get("/api/v1/content/movies/550").accept(
+                authorizedGet("/api/v1/content/movies/550").accept(
                     MediaType.APPLICATION_JSON
                 )
             )
@@ -152,7 +157,7 @@ class MoviesControllerTest {
 
         MvcResult mvcResult = mockMvc
             .perform(
-                get("/api/v1/content/movies/9999").accept(
+                authorizedGet("/api/v1/content/movies/9999").accept(
                     MediaType.APPLICATION_JSON
                 )
             )
@@ -162,5 +167,96 @@ class MoviesControllerTest {
         mockMvc
             .perform(asyncDispatch(mvcResult))
             .andExpect(status().isNotFound());
+    }
+
+    // -----------------------------------------------------------------------
+    // Watch providers (Streaming Availability)
+    // -----------------------------------------------------------------------
+
+    @Test
+    void getMovieWatchProviders_returns200WithSvgIconsAndLink() throws Exception {
+        List<WatchProvider> providers = List.of(
+            new WatchProvider(
+                "Netflix",
+                "https://media.movieofthenight.com/services/netflix/logo-light-theme.svg",
+                "https://media.movieofthenight.com/services/netflix/logo-dark-theme.svg",
+                "https://www.netflix.com/title/70079583"
+            )
+        );
+        when(
+            contentService.getMovieWatchProviders(eq(550), eq("US"), eq("DEFAULT"))
+        ).thenReturn(Mono.just(providers));
+
+        MvcResult mvcResult = mockMvc
+            .perform(
+                authorizedGet("/api/v1/content/movies/550/watch-providers", "US", "DEFAULT")
+                    .accept(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc
+            .perform(asyncDispatch(mvcResult))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].name").value("Netflix"))
+            .andExpect(jsonPath("$[0].iconLight", org.hamcrest.Matchers.endsWith(".svg")))
+            .andExpect(jsonPath("$[0].iconDark", org.hamcrest.Matchers.endsWith(".svg")))
+            .andExpect(jsonPath("$[0].link").value("https://www.netflix.com/title/70079583"));
+    }
+
+    @Test
+    void getMovieWatchProviders_passesHeadersToService() throws Exception {
+        when(
+            contentService.getMovieWatchProviders(eq(550), eq("US"), eq("es"))
+        ).thenReturn(Mono.just(List.of()));
+
+        MvcResult mvcResult = mockMvc
+            .perform(
+                authorizedGet("/api/v1/content/movies/550/watch-providers", "US", "es")
+                    .accept(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isOk());
+
+        verify(contentService).getMovieWatchProviders(550, "US", "es");
+    }
+
+    @Test
+    void getMovieWatchProviders_noneAvailable_returnsEmptyList() throws Exception {
+        when(
+            contentService.getMovieWatchProviders(anyInt(), anyString(), anyString())
+        ).thenReturn(Mono.just(List.of()));
+
+        MvcResult mvcResult = mockMvc
+            .perform(
+                authorizedGet("/api/v1/content/movies/550/watch-providers", "FR", "DEFAULT")
+                    .accept(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc
+            .perform(asyncDispatch(mvcResult))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    private MockHttpServletRequestBuilder authorizedGet(String url) {
+        return get(url)
+                .header(GatewayHeaders.COUNTRY, "US")
+                .header(GatewayHeaders.REGION, "DEFAULT");
+    }
+
+    private MockHttpServletRequestBuilder authorizedGet(String url, String country, String region) {
+        return get(url)
+                .header(GatewayHeaders.COUNTRY, country)
+                .header(GatewayHeaders.REGION, region);
     }
 }

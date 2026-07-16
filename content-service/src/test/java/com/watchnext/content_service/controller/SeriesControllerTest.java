@@ -2,6 +2,8 @@ package com.watchnext.content_service.controller;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,6 +19,7 @@ import com.watchnext.content_service.dto.common.ExternalIds;
 import com.watchnext.content_service.dto.common.Genre;
 import com.watchnext.content_service.dto.common.MediaSummary;
 import com.watchnext.content_service.dto.common.Video;
+import com.watchnext.content_service.dto.common.WatchProvider;
 import com.watchnext.content_service.dto.tv.TvDetails;
 import com.watchnext.content_service.dto.tv.TvEpisode;
 import com.watchnext.content_service.dto.tv.TvListResponse;
@@ -310,5 +313,87 @@ class SeriesControllerTest {
             .andReturn();
 
         mockMvc.perform(asyncDispatch(result)).andExpect(status().isNotFound());
+    }
+
+    // -----------------------------------------------------------------------
+    // Watch providers (Streaming Availability)
+    // -----------------------------------------------------------------------
+
+    @Test
+    void getTvWatchProviders_returns200WithSvgIconsAndLink() throws Exception {
+        List<WatchProvider> providers = List.of(
+            new WatchProvider(
+                "Apple TV",
+                "https://media.movieofthenight.com/services/apple/logo-light-theme.svg",
+                "https://media.movieofthenight.com/services/apple/logo-dark-theme.svg",
+                "https://tv.apple.com/us/show/breaking-bad"
+            )
+        );
+        when(
+            contentService.getTvWatchProviders(eq(1396), eq("US"), eq("US"))
+        ).thenReturn(Mono.just(providers));
+
+        MvcResult result = mockMvc
+            .perform(
+                get("/api/v1/content/tv/1396/watch-providers")
+                    .header("User-Country", "US")
+                    .header("Region", "US")
+                    .accept(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc
+            .perform(asyncDispatch(result))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].name").value("Apple TV"))
+            .andExpect(jsonPath("$[0].iconLight", org.hamcrest.Matchers.endsWith(".svg")))
+            .andExpect(jsonPath("$[0].iconDark", org.hamcrest.Matchers.endsWith(".svg")))
+            .andExpect(jsonPath("$[0].link").value("https://tv.apple.com/us/show/breaking-bad"));
+    }
+
+    @Test
+    void getTvWatchProviders_countryParamWinsOverHeader() throws Exception {
+        when(
+            contentService.getTvWatchProviders(eq(1396), eq("US"), eq("es"))
+        ).thenReturn(Mono.just(List.of()));
+
+        MvcResult result = mockMvc
+            .perform(
+                get("/api/v1/content/tv/1396/watch-providers")
+                    .header("User-Country", "US")
+                    .header("Region", "es")
+                    .accept(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result)).andExpect(status().isOk());
+
+        // el controller debe pasar country y region tal cual llegan; la precedencia se resuelve en el service.
+        verify(contentService).getTvWatchProviders(1396, "US", "es");
+    }
+
+    @Test
+    void getTvWatchProviders_noneAvailable_returnsEmptyList() throws Exception {
+        when(
+            contentService.getTvWatchProviders(anyInt(), eq("FR"), eq("FR"))
+        ).thenReturn(Mono.just(List.of()));
+
+        MvcResult result = mockMvc
+            .perform(
+                get("/api/v1/content/tv/1396/watch-providers")
+                    .header("User-Country", "FR")
+                    .header("Region", "FR")
+                    .accept(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc
+            .perform(asyncDispatch(result))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
     }
 }

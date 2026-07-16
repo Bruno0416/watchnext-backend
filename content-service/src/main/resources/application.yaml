@@ -23,10 +23,20 @@ tmdb:
     key: ${TMDB_API_KEY}
   default-region: US
 
+streaming-availability:
+  api:
+    base-url: https://streaming-availability.p.rapidapi.com
+    host: streaming-availability.p.rapidapi.com
+    key: ${STREAMING_AVAIABILITY_API_KEY}
+
 application:
   security:
     jwt:
       secret-key: ${JWT_SECRET}
+    service-token:
+      secret-key: ${SERVICE_JWT_SECRET}
+      expiration: 3m
+      cache-ttl: 150s
 
 eureka:
   client:

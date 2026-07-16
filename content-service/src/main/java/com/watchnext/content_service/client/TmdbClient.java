@@ -7,7 +7,6 @@ import com.watchnext.common.enums.TimeWindow;
 import com.watchnext.content_service.dto.common.GenreListResponse;
 import com.watchnext.content_service.dto.common.ReviewResponse;
 import com.watchnext.content_service.dto.common.TrendingResponse;
-import com.watchnext.content_service.dto.common.WatchProviders;
 import com.watchnext.content_service.dto.movies.CollectionDetails;
 import com.watchnext.content_service.dto.movies.MovieDetailsRaw;
 import com.watchnext.content_service.dto.movies.MovieListResponse;
@@ -44,6 +43,7 @@ public class TmdbClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
+    // ---------- configuracion ----------
     public TmdbClient(
         WebClient.Builder builder,
         @Value("${tmdb.api.base-url}") String baseUrl,
@@ -63,13 +63,13 @@ public class TmdbClient {
             .build();
     }
 
-    // --- Movies ----
-
+    // ---------- peliculas ----------
     public Mono<MovieDetailsRaw> getMovieDetails(
         Integer movieId,
         String language,
         String region
     ) {
+        // 1. ejecutar llamada a tmdb controlando timeouts y estados de error 404
         return webClient
             .get()
             .uri(uriBuilder -> {
@@ -101,39 +101,6 @@ public class TmdbClient {
                 )
             )
             .bodyToMono(MovieDetailsRaw.class);
-    }
-
-    public Mono<WatchProviders> getMovieWatchProviders(
-        Integer movieId,
-        String watchRegion
-    ) {
-        return webClient
-            .get()
-            .uri(uriBuilder ->
-                uriBuilder
-                    .path("/movie/{id}/watch/providers")
-                    .queryParam("watch_region", watchRegion)
-                    .build(movieId)
-            )
-            .retrieve()
-            .onStatus(HttpStatusCode::isError, response ->
-                Mono.error(
-                    new ErrorFetchingMovieDetails(
-                        "Error al obtener watch providers de la pelicula " +
-                            movieId
-                    )
-                )
-            )
-            .bodyToMono(String.class)
-            .map(json -> {
-                try {
-                    JsonNode root = objectMapper.readTree(json);
-                    JsonNode results = root.path("results").path(watchRegion);
-                    return objectMapper.treeToValue(results, WatchProviders.class);
-                } catch (Exception e) {
-                    return new WatchProviders(null, null, null);
-                }
-            });
     }
 
     public Mono<MovieListResponse> getNowPlaying(
@@ -270,38 +237,6 @@ public class TmdbClient {
                 )
             )
             .bodyToMono(TvDetailsRaw.class);
-    }
-
-    public Mono<WatchProviders> getTvWatchProviders(
-        Integer tvId,
-        String watchRegion
-    ) {
-        return webClient
-            .get()
-            .uri(uriBuilder ->
-                uriBuilder
-                    .path("/tv/{id}/watch/providers")
-                    .queryParam("watch_region", watchRegion)
-                    .build(tvId)
-            )
-            .retrieve()
-            .onStatus(HttpStatusCode::isError, response ->
-                Mono.error(
-                    new ErrorFetchingTvDetails(
-                        "Error al obtener watch providers de la serie " + tvId
-                    )
-                )
-            )
-            .bodyToMono(String.class)
-            .map(json -> {
-                try {
-                    JsonNode root = objectMapper.readTree(json);
-                    JsonNode results = root.path("results").path(watchRegion);
-                    return objectMapper.treeToValue(results, WatchProviders.class);
-                } catch (Exception e) {
-                    return new WatchProviders(null, null, null);
-                }
-            });
     }
 
     public Mono<TvSeasonDetail> getTvSeason(
@@ -614,6 +549,7 @@ public class TmdbClient {
         String path = switch (mediaType == null ? "multi" : mediaType) {
             case "movie" -> "/search/movie";
             case "tv" -> "/search/tv";
+            case "person" -> "/search/person";
             default -> "/search/multi";
         };
 

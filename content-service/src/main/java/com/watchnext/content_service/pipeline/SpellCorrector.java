@@ -46,13 +46,13 @@ public class SpellCorrector {
         this.props = props;
     }
 
-    // --- Inicializacion ---
+    // ---------- inicializacion ----------
 
     @PostConstruct
     void preload() {
         if (!props.getSpell().isEnabled()) {
             log.info(
-                "[SpellCorrector] Corrección ortográfica deshabilitada (spell.enabled=false)."
+                "[SpellCorrector] correccion ortografica deshabilitada (spell.enabled=false)"
             );
             return;
         }
@@ -68,7 +68,7 @@ public class SpellCorrector {
                     getOrCreate(lang);
                 } catch (Exception e) {
                     log.warn(
-                        "[SpellCorrector] Fallo al precargar idioma '{}': {}",
+                        "[SpellCorrector] fallo al precargar idioma '{}': {}",
                         lang,
                         e.getMessage()
                     );
@@ -81,7 +81,7 @@ public class SpellCorrector {
             return query;
         }
 
-        // 1. Extraer idioma y obtener o crear instancia de correccion
+        // 1. extraer idioma y obtener o crear instancia de correccion
         String lang = extractLang(language);
         SymSpellCheck checker = getOrCreate(lang);
         if (checker == null) {
@@ -89,7 +89,7 @@ public class SpellCorrector {
         }
 
         try {
-            // 2. Aplicar correccion segun si es palabra unica o compuesta
+            // 2. aplicar correccion segun si es palabra unica o compuesta
             String corrected = query.contains(" ")
                 ? correctCompound(checker, query)
                 : correctSingle(checker, query);
@@ -105,7 +105,7 @@ public class SpellCorrector {
             return corrected;
         } catch (SpellCheckException e) {
             log.warn(
-                "[SpellCorrector] Error corrigiendo '{}': {}",
+                "[SpellCorrector] error corrigiendo '{}': {}",
                 query,
                 e.getMessage()
             );
@@ -127,11 +127,11 @@ public class SpellCorrector {
         return isReady(FALLBACK_LANG);
     }
 
-    // --- Correccion interna ---
+    // ---------- correccion interna ----------
 
     private String correctSingle(SymSpellCheck checker, String word)
         throws SpellCheckException {
-        // 1. Buscar sugerencias para palabra unica
+        // 1. buscar sugerencias para palabra unica
         List<SuggestionItem> suggestions = checker.lookup(
             word,
             Verbosity.TOP,
@@ -143,7 +143,7 @@ public class SpellCorrector {
 
     private String correctCompound(SymSpellCheck checker, String phrase)
         throws SpellCheckException {
-        // 1. Buscar sugerencias para frase compuesta
+        // 1. buscar sugerencias para frase compuesta
         List<SuggestionItem> suggestions = checker.lookupCompound(
             phrase,
             props.getSpell().getMaxEditDistance()
@@ -152,10 +152,10 @@ public class SpellCorrector {
         return suggestions.get(0).getTerm();
     }
 
-    // --- Inicialización lazy del checker ---
+    // ---------- inicializacion lazy del checker ----------
 
     private SymSpellCheck getOrCreate(String lang) {
-        // 1. Retornar instancia existente o nulo si fallo previamente
+        // 1. retornar instancia existente o nulo si fallo previamente
         if (checkers.containsKey(lang)) return checkers.get(lang);
         if (failedLangs.containsKey(lang)) return null;
 
@@ -166,7 +166,7 @@ public class SpellCorrector {
         if (basePath == null) {
             if (!lang.equals(FALLBACK_LANG)) {
                 log.debug(
-                    "[SpellCorrector] Sin diccionario para '{}', redirigiendo a '{}'.",
+                    "[SpellCorrector] sin diccionario para '{}', redirigiendo a '{}'",
                     lang,
                     FALLBACK_LANG
                 );
@@ -175,14 +175,14 @@ public class SpellCorrector {
                 return fallback;
             }
             log.warn(
-                "[SpellCorrector] No hay diccionario base configurado para '{}'.",
+                "[SpellCorrector] no hay diccionario base configurado para '{}'",
                 lang
             );
             failedLangs.put(lang, true);
             return null;
         }
 
-        // 2. Construir e inicializar nueva instancia de correccion ortografica
+        // 2. construir e inicializar nueva instancia de correccion ortografica
         return checkers.computeIfAbsent(lang, l ->
             buildChecker(l, basePath, domainPath)
         );
@@ -194,7 +194,7 @@ public class SpellCorrector {
         String domainPath
     ) {
         try {
-            // 1. Configurar parametros de correccion ortografica
+            // 1. configurar parametros de correccion ortografica
             SpellCheckSettings settings = SpellCheckSettings.builder()
                 .maxEditDistance(props.getSpell().getMaxEditDistance())
                 .prefixLength(props.getSpell().getPrefixLength())
@@ -203,7 +203,7 @@ public class SpellCorrector {
                 .topK(1)
                 .build();
 
-            // 2. Inicializar estructuras de datos para los diccionarios
+            // 2. inicializar estructuras de datos para los diccionarios
             DataHolder dataHolder = new InMemoryDataHolder(
                 settings,
                 new Murmur3HashFunction()
@@ -230,15 +230,15 @@ public class SpellCorrector {
             }
 
             log.info(
-                "[SpellCorrector] Checker '{}' listo — base='{}' | domain='{}'.",
+                "[SpellCorrector] checker '{}' listo - base='{}' | domain='{}'",
                 lang,
                 basePath,
-                domainPath != null ? domainPath : "—"
+                domainPath != null ? domainPath : "-"
             );
             return checker;
         } catch (Exception e) {
             log.error(
-                "[SpellCorrector] Error construyendo checker '{}': {}",
+                "[SpellCorrector] error construyendo checker '{}': {}",
                 lang,
                 e.getMessage(),
                 e
@@ -248,7 +248,7 @@ public class SpellCorrector {
         }
     }
 
-    // --- Carga de diccionario ---
+    // ---------- carga de diccionario ----------
 
     private void loadDictionary(
         DataHolder dataHolder,
@@ -259,7 +259,7 @@ public class SpellCorrector {
         ClassPathResource resource = new ClassPathResource(classpath);
         if (!resource.exists()) {
             throw new IOException(
-                "Diccionario no encontrado en classpath: '" + classpath + "'. "
+                "diccionario no encontrado en classpath: '" + classpath + "'"
             );
         }
 
@@ -306,7 +306,7 @@ public class SpellCorrector {
         }
 
         log.info(
-            "[SpellCorrector] [{}/{}] {} entradas cargadas ({} omitidas) desde '{}'.",
+            "[SpellCorrector] [{}/{}] {} entradas cargadas ({} omitidas) desde '{}'",
             lang,
             label,
             loaded,

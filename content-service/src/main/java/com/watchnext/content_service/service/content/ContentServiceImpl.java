@@ -2,17 +2,22 @@ package com.watchnext.content_service.service.content;
 
 import com.watchnext.common.enums.MediaType;
 import com.watchnext.common.enums.TimeWindow;
+import com.watchnext.common.util.CountryCodes;
+import com.watchnext.content_service.client.StreamingAvailabilityClient;
 import com.watchnext.content_service.client.TmdbClient;
 import com.watchnext.content_service.config.TmdbProperties;
 import com.watchnext.content_service.dto.common.CastMember;
+import com.watchnext.content_service.dto.common.Credits;
 import com.watchnext.content_service.dto.common.CrewMember;
 import com.watchnext.content_service.dto.common.Genre;
 import com.watchnext.content_service.dto.common.GenreListResponse;
 import com.watchnext.content_service.dto.common.MediaSummary;
 import com.watchnext.content_service.dto.common.ReviewResponse;
+import com.watchnext.content_service.dto.common.StreamingOptionSummary;
 import com.watchnext.content_service.dto.common.TrendingResponse;
 import com.watchnext.content_service.dto.common.Video;
-import com.watchnext.content_service.dto.common.WatchProviders;
+import com.watchnext.content_service.dto.common.VideoWrapper;
+import com.watchnext.content_service.dto.common.WatchProvider;
 import com.watchnext.content_service.dto.movies.CollectionDetails;
 import com.watchnext.content_service.dto.movies.MovieDetails;
 import com.watchnext.content_service.dto.movies.MovieDetailsRaw;
@@ -28,11 +33,15 @@ import com.watchnext.content_service.dto.tv.TvListResponse;
 import com.watchnext.content_service.dto.tv.TvSeasonDetail;
 import com.watchnext.content_service.util.ContentEnrichment;
 import java.time.Duration;
+import java.util.stream.Collectors;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -51,13 +60,15 @@ public class ContentServiceImpl implements ContentService {
     private static final int FILMOGRAPHY_CAP = 30;
 
     private final TmdbClient tmdbClient;
+    private final StreamingAvailabilityClient streamingAvailabilityClient;
     private final ReactiveRedisTemplate<String, Object> redisTemplate;
     private final TmdbProperties tmdbProperties;
 
-    // ----------> Movies <----------
+    // ---------- peliculas ----------
 
     @Override
     public Mono<MovieDetails> getMovieDetails(Integer movieId, String language) {
+        // 1. obtener detalles de pelicula desde cache o repositorio
         return cacheOrFetch(
             "movie:details:" + movieId + ":" + language,
             MovieDetails.class,
@@ -67,15 +78,16 @@ public class ContentServiceImpl implements ContentService {
     }
 
     @Override
-    public Mono<WatchProviders> getMovieWatchProviders(Integer movieId, String region) {
-        // 1. resolver la region: si no llega por header, usar el default de config
-        String watchRegion = region != null ? region : tmdbProperties.getDefaultRegion();
-        return cacheOrFetch(
-            "movie:providers:" + movieId + ":" + watchRegion,
-            WatchProviders.class,
+    public Mono<List<WatchProvider>> getMovieWatchProviders(Integer movieId, String country, String region) {
+        // 1. resolver el pais efectivo: param de URL > header X-Region > default de config.
+        String resolvedCountry = resolveCountry(country, region);
+        return cacheOrFetchList(
+            "movie:providers:" + resolvedCountry + ":" + movieId,
             PROVIDERS_TIME,
-            tmdbClient.getMovieWatchProviders(movieId, watchRegion)
-                .onErrorResume(e -> Mono.just(new WatchProviders(null, null, null)))
+            streamingAvailabilityClient
+                .getShowStreamingOptions("movie/" + movieId, resolvedCountry)
+                .map(ContentServiceImpl::dedupeByService)
+                .onErrorResume(e -> Mono.just(List.of()))
         );
     }
 
@@ -184,13 +196,28 @@ public class ContentServiceImpl implements ContentService {
         String language,
         String region
     ) {
+        String normalizedRegion = normalizeRegionOrNull(region);
         String key = "movie:discover:" +
             (genres != null ? genres : "all") + ":" +
             (sortBy != null ? sortBy : "default") + ":" +
             page + ":" + language + ":" +
-            (region != null ? region : "nr");
+            (normalizedRegion != null ? normalizedRegion : "nr");
         return cacheOrFetch(key, MovieListResponse.class, LISTS_TIME,
-            tmdbClient.discoverMovies(genres, sortBy, page, language, region));
+            tmdbClient.discoverMovies(genres, sortBy, page, language, normalizedRegion));
+    }
+
+    @Override
+    public Mono<MovieListResponse> getMoviesByGenre(Set<Integer> genre, Integer page, String language, String region) {
+        String genresString = genre.stream()
+                                   .sorted()
+                                   .map(String::valueOf)
+                                   .collect(Collectors.joining("|"));
+
+        String normalizedRegion = normalizeRegionOrNull(region);
+        String key = "movie:by-genre:" + genresString + ":" + page + ":" + language + ":" + (normalizedRegion != null ? normalizedRegion : "nr");
+
+        return cacheOrFetch(key, MovieListResponse.class, LISTS_TIME,
+            tmdbClient.discoverMovies(genresString, "popularity.desc", page, language, normalizedRegion));
     }
 
     @Override
@@ -216,15 +243,16 @@ public class ContentServiceImpl implements ContentService {
     }
 
     @Override
-    public Mono<WatchProviders> getTvWatchProviders(Integer tvId, String region) {
-        // 1. resolver la region: si no llega por header, usar el default de config
-        String watchRegion = region != null ? region : tmdbProperties.getDefaultRegion();
-        return cacheOrFetch(
-            "tv:providers:" + tvId + ":" + watchRegion,
-            WatchProviders.class,
+    public Mono<List<WatchProvider>> getTvWatchProviders(Integer tvId, String country, String region) {
+        // 1. resolver el pais efectivo: param de URL > header X-Region > default de config.
+        String resolvedCountry = resolveCountry(country, region);
+        return cacheOrFetchList(
+            "tv:providers:" + resolvedCountry + ":" + tvId,
             PROVIDERS_TIME,
-            tmdbClient.getTvWatchProviders(tvId, watchRegion)
-                .onErrorResume(e -> Mono.just(new WatchProviders(null, null, null)))
+            streamingAvailabilityClient
+                .getShowStreamingOptions("tv/" + tvId, resolvedCountry)
+                .map(ContentServiceImpl::dedupeByService)
+                .onErrorResume(e -> Mono.just(List.of()))
         );
     }
 
@@ -376,13 +404,28 @@ public class ContentServiceImpl implements ContentService {
         String language,
         String region
     ) {
+        String normalizedRegion = normalizeRegionOrNull(region);
         String key = "tv:discover:" +
             (genres != null ? genres : "all") + ":" +
             (sortBy != null ? sortBy : "default") + ":" +
             page + ":" + language + ":" +
-            (region != null ? region : "nr");
+            (normalizedRegion != null ? normalizedRegion : "nr");
         return cacheOrFetch(key, TvListResponse.class, LISTS_TIME,
-            tmdbClient.discoverTv(genres, sortBy, page, language, region));
+            tmdbClient.discoverTv(genres, sortBy, page, language, normalizedRegion));
+    }
+
+    @Override
+    public Mono<TvListResponse> getSeriesByGenre(Set<Integer> genre, Integer page, String language, String region) {
+        String genresString = genre.stream()
+                                   .sorted()
+                                   .map(String::valueOf)
+                                   .collect(Collectors.joining("|"));
+
+        String normalizedRegion = normalizeRegionOrNull(region);
+        String key = "tv:by-genre:" + genresString + ":" + page + ":" + language + ":" + (normalizedRegion != null ? normalizedRegion : "nr");
+
+        return cacheOrFetch(key, TvListResponse.class, LISTS_TIME,
+            tmdbClient.discoverTv(genresString, "popularity.desc", page, language, normalizedRegion));
     }
 
     @Override
@@ -502,8 +545,50 @@ public class ContentServiceImpl implements ContentService {
         return language == null || language.startsWith("en");
     }
 
+    // 1. resolver el pais para watch-providers: query param > header X-Region > default de config.
+    // 2. cualquier valor invalido/no-ISO se descarta y se sigue con el siguiente en la precedencia.
+    private String resolveCountry(String country, String region) {
+        if (CountryCodes.isValid(country)) return CountryCodes.normalize(country);
+        if (CountryCodes.isValid(region)) return CountryCodes.normalize(region);
+        return tmdbProperties.getDefaultRegion();
+    }
+
+    // 1. normalizar la region para discover/by-genre: null si no vino o si no es un ISO 3166 valido.
+    private String normalizeRegionOrNull(String region) {
+        if (region == null) return null;
+        String normalized = CountryCodes.normalize(region);
+        return CountryCodes.isValid(normalized) ? normalized : null;
+    }
+
+    // 1. deduplicar por servicio: si un mismo servicio aparece con varios tipos (subscription/rent/buy/...),
+    // preferir subscription o free por sobre rent/buy/addon.
+    private static List<WatchProvider> dedupeByService(List<StreamingOptionSummary> options) {
+        Map<String, StreamingOptionSummary> bestByService = new LinkedHashMap<>();
+        for (StreamingOptionSummary option : options) {
+            StreamingOptionSummary current = bestByService.get(option.serviceId());
+            if (current == null || isPreferredType(option.type(), current.type())) {
+                bestByService.put(option.serviceId(), option);
+            }
+        }
+        return bestByService.values().stream()
+            .map(o -> new WatchProvider(o.name(), o.iconLight(), o.iconDark(), o.link()))
+            .toList();
+    }
+
+    private static boolean isPreferredType(String candidate, String current) {
+        return typeRank(candidate) < typeRank(current);
+    }
+
+    private static int typeRank(String type) {
+        return switch (type == null ? "" : type) {
+            case "subscription", "free" -> 0;
+            case "rent", "buy" -> 1;
+            default -> 2;
+        };
+    }
+
     private List<CastMember> castFrom(
-        com.watchnext.content_service.dto.common.Credits credits
+        Credits credits
     ) {
         return credits == null || credits.cast() == null
             ? Collections.emptyList()
@@ -511,7 +596,7 @@ public class ContentServiceImpl implements ContentService {
     }
 
     private List<CrewMember> extractDirectors(
-        com.watchnext.content_service.dto.common.Credits credits
+        Credits credits
     ) {
         if (credits == null || credits.crew() == null) return List.of();
         return credits.crew().stream()
@@ -520,7 +605,7 @@ public class ContentServiceImpl implements ContentService {
     }
 
     private List<Video> videosFrom(
-        com.watchnext.content_service.dto.common.VideoWrapper videos
+        VideoWrapper videos
     ) {
         return videos == null || videos.results() == null
             ? Collections.emptyList()
@@ -558,6 +643,31 @@ public class ContentServiceImpl implements ContentService {
             .opsForValue()
             .get(cacheKey)
             .cast(type)
+            .onErrorResume(e -> Mono.empty())
+            .switchIfEmpty(
+                fetch.flatMap(value ->
+                    redisTemplate
+                        .opsForValue()
+                        .set(cacheKey, value, ttl)
+                        .onErrorComplete()
+                        .thenReturn(value)
+                )
+            );
+    }
+
+    // 1. variante de cacheOrFetch para listas: el tipo generico de la lista se pierde en Redis,
+    // por eso se castea a List crudo y se confia en el tipo inferido por el Mono de fetch.
+    @SuppressWarnings("unchecked")
+    private <T> Mono<List<T>> cacheOrFetchList(
+        String cacheKey,
+        Duration ttl,
+        Mono<List<T>> fetch
+    ) {
+        return redisTemplate
+            .opsForValue()
+            .get(cacheKey)
+            .cast(List.class)
+            .map(list -> (List<T>) list)
             .onErrorResume(e -> Mono.empty())
             .switchIfEmpty(
                 fetch.flatMap(value ->
