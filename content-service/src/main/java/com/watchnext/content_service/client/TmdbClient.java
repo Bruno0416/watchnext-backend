@@ -317,18 +317,6 @@ public class TmdbClient {
             .bodyToMono(TvEpisode.class);
     }
 
-    public Mono<TvListResponse> getOnTheAirTv(Integer page, String language) {
-        return fetchTvList("/tv/on_the_air", page, language);
-    }
-
-    public Mono<TvListResponse> getPopularTv(Integer page, String language) {
-        return fetchTvList("/tv/popular", page, language);
-    }
-
-    public Mono<TvListResponse> getTopRatedTv(Integer page, String language) {
-        return fetchTvList("/tv/top_rated", page, language);
-    }
-
     public Mono<TvListResponse> discoverTv(
         String genres,
         String sortBy,
@@ -336,23 +324,41 @@ public class TmdbClient {
         String language,
         String region
     ) {
-        return fetchTvList("/discover/tv", page, language, region,
-            uriBuilder -> {
-                if (genres != null && !genres.isBlank()) {
-                    uriBuilder.queryParam("with_genres", genres);
-                }
-                if (sortBy != null && !sortBy.isBlank()) {
-                    uriBuilder.queryParam("sort_by", sortBy);
-                }
-            });
+        return discoverTv(DiscoverTvFilters.of(genres, sortBy), page, language, region);
     }
 
-    private Mono<TvListResponse> fetchTvList(
-        String path,
+    // 1. discover/tv con filtros de calidad opcionales (with_type, without_genres, vote_count.gte,
+    //    air_date.gte/lte) para las listas curadas de TV. Cada param se omite si su campo es null/blank.
+    public Mono<TvListResponse> discoverTv(
+        DiscoverTvFilters filters,
         Integer page,
-        String language
+        String language,
+        String region
     ) {
-        return fetchTvList(path, page, language, null, null);
+        return fetchTvList("/discover/tv", page, language, region,
+            uriBuilder -> {
+                if (filters.withGenres() != null && !filters.withGenres().isBlank()) {
+                    uriBuilder.queryParam("with_genres", filters.withGenres());
+                }
+                if (filters.sortBy() != null && !filters.sortBy().isBlank()) {
+                    uriBuilder.queryParam("sort_by", filters.sortBy());
+                }
+                if (filters.withType() != null && !filters.withType().isBlank()) {
+                    uriBuilder.queryParam("with_type", filters.withType());
+                }
+                if (filters.withoutGenres() != null && !filters.withoutGenres().isBlank()) {
+                    uriBuilder.queryParam("without_genres", filters.withoutGenres());
+                }
+                if (filters.voteCountGte() != null) {
+                    uriBuilder.queryParam("vote_count.gte", filters.voteCountGte());
+                }
+                if (filters.airDateGte() != null) {
+                    uriBuilder.queryParam("air_date.gte", filters.airDateGte().toString());
+                }
+                if (filters.airDateLte() != null) {
+                    uriBuilder.queryParam("air_date.lte", filters.airDateLte().toString());
+                }
+            });
     }
 
     private Mono<TvListResponse> fetchTvList(

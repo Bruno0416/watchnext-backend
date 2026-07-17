@@ -49,6 +49,15 @@ eureka:
     instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
 
 watchnext:
+  tv-filters:
+    vote-count-popular: 100
+    vote-count-top-rated: 500
+    vote-count-on-the-air: 20
+    on-air-past-days: 14
+    on-air-future-days: 7
+    excluded-show-ids:
+      - 65701
+
   search:
     cache-ttl-generic: 6h
     cache-ttl-precise: 24h

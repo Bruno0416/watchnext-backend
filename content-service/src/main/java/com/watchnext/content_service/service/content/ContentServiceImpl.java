@@ -3,9 +3,12 @@ package com.watchnext.content_service.service.content;
 import com.watchnext.common.enums.MediaType;
 import com.watchnext.common.enums.TimeWindow;
 import com.watchnext.common.util.CountryCodes;
+import com.watchnext.content_service.client.DiscoverTvFilters;
 import com.watchnext.content_service.client.StreamingAvailabilityClient;
 import com.watchnext.content_service.client.TmdbClient;
 import com.watchnext.content_service.config.TmdbProperties;
+import com.watchnext.content_service.config.TvListFilterProperties;
+import com.watchnext.content_service.constant.TmdbTvFilters;
 import com.watchnext.content_service.dto.common.CastMember;
 import com.watchnext.content_service.dto.common.Credits;
 import com.watchnext.content_service.dto.common.CrewMember;
@@ -30,9 +33,11 @@ import com.watchnext.content_service.dto.tv.TvDetails;
 import com.watchnext.content_service.dto.tv.TvDetailsRaw;
 import com.watchnext.content_service.dto.tv.TvEpisode;
 import com.watchnext.content_service.dto.tv.TvListResponse;
+import com.watchnext.content_service.dto.tv.TvSummary;
 import com.watchnext.content_service.dto.tv.TvSeasonDetail;
 import com.watchnext.content_service.util.ContentEnrichment;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.ArrayList;
@@ -63,6 +68,7 @@ public class ContentServiceImpl implements ContentService {
     private final StreamingAvailabilityClient streamingAvailabilityClient;
     private final ReactiveRedisTemplate<String, Object> redisTemplate;
     private final TmdbProperties tmdbProperties;
+    private final TvListFilterProperties tvListFilterProperties;
 
     // ---------- peliculas ----------
 
@@ -313,34 +319,82 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
+    // 1. reemplaza /tv/on_the_air por /discover/tv: filtra por tipo guionizado, blacklist de generos
+    //    y ventana de air_date (episodios emitidos recientemente o por emitir), no first_air_date.
+    // 2. la clave de cache incluye la ventana calculada para no servir resultados de un dia anterior.
+    // 1. Descartar del payload resultante aquellos IDs presentes en el denylist manual 
+    //    (shows engañosos mal etiquetados por TMDB como Good Mythical Morning).
+    private TvListResponse filterDenylistedShows(TvListResponse response) {
+        if (tvListFilterProperties.getExcludedShowIds() == null || tvListFilterProperties.getExcludedShowIds().isEmpty()) {
+            return response;
+        }
+        List<TvSummary> filteredResults = response.results().stream()
+            .filter(show -> !tvListFilterProperties.getExcludedShowIds().contains(show.id()))
+            .toList();
+        return new TvListResponse(response.page(), filteredResults, response.totalPages(), response.totalResults());
+    }
+
     @Override
     public Mono<TvListResponse> getOnTheAir(Integer page, String language) {
+        LocalDate airDateGte = LocalDate.now().minusDays(tvListFilterProperties.getOnAirPastDays());
+        LocalDate airDateLte = LocalDate.now().plusDays(tvListFilterProperties.getOnAirFutureDays());
+        DiscoverTvFilters filters = new DiscoverTvFilters(
+            null,
+            "popularity.desc",
+            TmdbTvFilters.ALLOWED_TYPES,
+            TmdbTvFilters.BLACKLISTED_GENRES,
+            tvListFilterProperties.getVoteCountOnTheAir(),
+            airDateGte,
+            airDateLte
+        );
         return cacheOrFetch(
-            "tv:on_the_air:" + page + ":" + language,
+            "tv:on_the_air:v2:" + airDateGte + ":" + airDateLte + ":" + page + ":" + language,
             TvListResponse.class,
             LISTS_TIME,
-            tmdbClient.getOnTheAirTv(page, language)
-        );
+            tmdbClient.discoverTv(filters, page, language, null)
+        ).map(this::filterDenylistedShows);
     }
 
+    // 1. reemplaza /tv/popular por /discover/tv: solo Scripted|Miniseries, sin generos de la blacklist
+    //    y vote_count.gte para descartar titulos obscuros.
     @Override
     public Mono<TvListResponse> getPopularTv(Integer page, String language) {
+        DiscoverTvFilters filters = new DiscoverTvFilters(
+            null,
+            "popularity.desc",
+            TmdbTvFilters.ALLOWED_TYPES,
+            TmdbTvFilters.BLACKLISTED_GENRES,
+            tvListFilterProperties.getVoteCountPopular(),
+            null,
+            null
+        );
         return cacheOrFetch(
-            "tv:popular:" + page + ":" + language,
+            "tv:popular:v2:" + page + ":" + language,
             TvListResponse.class,
             LISTS_TIME,
-            tmdbClient.getPopularTv(page, language)
-        );
+            tmdbClient.discoverTv(filters, page, language, null)
+        ).map(this::filterDenylistedShows);
     }
 
+    // 1. reemplaza /tv/top_rated por /discover/tv: mismo criterio de calidad, ordenado por vote_average
+    //    y con un vote_count.gte mas alto para que el ranking sea representativo.
     @Override
     public Mono<TvListResponse> getTopRatedTv(Integer page, String language) {
+        DiscoverTvFilters filters = new DiscoverTvFilters(
+            null,
+            "vote_average.desc",
+            TmdbTvFilters.ALLOWED_TYPES,
+            TmdbTvFilters.BLACKLISTED_GENRES,
+            tvListFilterProperties.getVoteCountTopRated(),
+            null,
+            null
+        );
         return cacheOrFetch(
-            "tv:top_rated:" + page + ":" + language,
+            "tv:top_rated:v2:" + page + ":" + language,
             TvListResponse.class,
             LISTS_TIME,
-            tmdbClient.getTopRatedTv(page, language)
-        );
+            tmdbClient.discoverTv(filters, page, language, null)
+        ).map(this::filterDenylistedShows);
     }
 
     @Override
