@@ -161,19 +161,23 @@ public class TmdbClient {
         return webClient
             .get()
             .uri(uriBuilder -> {
+                // 1. construir la uri base con path, language y page
                 uriBuilder
                     .path(path)
                     .queryParam("language", language)
                     .queryParam("page", page);
+                // 2. agregar region si fue especificada
                 if (region != null) {
                     uriBuilder.queryParam("region", region);
                 }
+                // 3. aplicar parametros extra si se proveyeron
                 if (extraParams != null) {
                     extraParams.accept(uriBuilder);
                 }
                 return uriBuilder.build();
             })
             .retrieve()
+            // 4. mapear errores http a excepcion de dominio
             .onStatus(HttpStatusCode::isError, response ->
                 Mono.error(
                     new ErrorFetchingMovieList(
@@ -207,9 +211,10 @@ public class TmdbClient {
             .bodyToMono(ReviewResponse.class);
     }
 
-    // --- TV Series ----
+    // ---------- tv series ----------
 
     public Mono<TvDetailsRaw> getTvDetails(Integer tvId, String language) {
+        // 1. ejecutar llamada a tmdb controlando timeouts y estados de error 404
         return webClient
             .get()
             .uri(uriBuilder ->
@@ -244,6 +249,7 @@ public class TmdbClient {
         Integer seasonNumber,
         String language
     ) {
+        // 1. ejecutar llamada a tmdb controlando timeouts y estados de error 404
         return webClient
             .get()
             .uri(uriBuilder ->
@@ -285,6 +291,7 @@ public class TmdbClient {
         Integer episodeNumber,
         String language
     ) {
+        // 1. ejecutar llamada a tmdb controlando timeouts y estados de error 404
         return webClient
             .get()
             .uri(uriBuilder ->
@@ -327,8 +334,8 @@ public class TmdbClient {
         return discoverTv(DiscoverTvFilters.of(genres, sortBy), page, language, region);
     }
 
-    // 1. discover/tv con filtros de calidad opcionales (with_type, without_genres, vote_count.gte,
-    //    air_date.gte/lte) para las listas curadas de TV. Cada param se omite si su campo es null/blank.
+    // discover/tv con filtros de calidad opcionales (with_type, without_genres, vote_count.gte,
+    // air_date.gte/lte) para las listas curadas de tv, cada param se omite si su campo es null/blank
     public Mono<TvListResponse> discoverTv(
         DiscoverTvFilters filters,
         Integer page,
@@ -337,6 +344,7 @@ public class TmdbClient {
     ) {
         return fetchTvList("/discover/tv", page, language, region,
             uriBuilder -> {
+                // 1. aplicar cada filtro opcional al query si esta presente
                 if (filters.withGenres() != null && !filters.withGenres().isBlank()) {
                     uriBuilder.queryParam("with_genres", filters.withGenres());
                 }
@@ -373,19 +381,23 @@ public class TmdbClient {
         return webClient
             .get()
             .uri(uriBuilder -> {
+                // 1. construir la uri base con path, language y page
                 uriBuilder
                     .path(path)
                     .queryParam("language", language)
                     .queryParam("page", page);
+                // 2. agregar region si fue especificada
                 if (region != null) {
                     uriBuilder.queryParam("region", region);
                 }
+                // 3. aplicar parametros extra si se proveyeron
                 if (extraParams != null) {
                     extraParams.accept(uriBuilder);
                 }
                 return uriBuilder.build();
             })
             .retrieve()
+            // 4. mapear errores http a excepcion de dominio
             .onStatus(HttpStatusCode::isError, response ->
                 Mono.error(
                     new ErrorFetchingTvList(
@@ -419,7 +431,7 @@ public class TmdbClient {
             .bodyToMono(ReviewResponse.class);
     }
 
-    // --- Persons ---
+    // ---------- persons ----------
 
     public Mono<PersonDetailsRaw> getPersonDetails(
         Long personId,
@@ -454,7 +466,7 @@ public class TmdbClient {
             .bodyToMono(PersonDetailsRaw.class);
     }
 
-    // --- Genres ---
+    // ---------- genres ----------
 
     public Mono<GenreListResponse> getMovieGenres(String language) {
         return webClient
@@ -488,7 +500,7 @@ public class TmdbClient {
             .bodyToMono(GenreListResponse.class);
     }
 
-    // --- Trending ---
+    // ---------- trending ----------
 
     public Mono<TrendingResponse> getTrending(
         MediaType mediaType,
@@ -510,7 +522,7 @@ public class TmdbClient {
             .bodyToMono(TrendingResponse.class);
     }
 
-    // --- Collections ---
+    // ---------- collections ----------
 
     public Mono<CollectionDetails> getCollection(
         Integer collectionId,
@@ -544,7 +556,7 @@ public class TmdbClient {
             .bodyToMono(CollectionDetails.class);
     }
 
-    // --- Search ----
+    // ---------- search ----------
 
     public Mono<List<SearchResult>> search(
         String query,
@@ -552,6 +564,7 @@ public class TmdbClient {
         String mediaType,
         String language
     ) {
+        // 1. resolver el path del endpoint segun el media type
         String path = switch (mediaType == null ? "multi" : mediaType) {
             case "movie" -> "/search/movie";
             case "tv" -> "/search/tv";
@@ -562,6 +575,7 @@ public class TmdbClient {
         return webClient
             .get()
             .uri(uriBuilder -> {
+                // 2. construir la uri con query, language y year si aplica
                 uriBuilder
                     .path(path)
                     .queryParam("query", query)
@@ -578,6 +592,7 @@ public class TmdbClient {
                 return uriBuilder.build();
             })
             .retrieve()
+            // 3. mapear errores http a excepcion de dominio
             .onStatus(
                 status -> status.value() == 404,
                 response ->
@@ -597,6 +612,7 @@ public class TmdbClient {
                 )
             )
             .bodyToMono(String.class)
+            // 4. parsear el body y mapear los resultados
             .map(jsonString -> {
                 try {
                     JsonNode rootNode = objectMapper.readTree(jsonString);
@@ -612,27 +628,32 @@ public class TmdbClient {
 
     private List<SearchResult> mapResults(JsonNode json, String forcedType) {
         List<SearchResult> out = new ArrayList<>();
+        // 1. validar que el campo results sea un arreglo
         JsonNode results = json.path("results");
         if (!results.isArray()) return out;
 
         for (JsonNode node : results) {
+            // 2. resolver type, saltar si no se puede determinar
             String type = forcedType != null
                 ? forcedType
                 : node.path("media_type").asText(null);
 
             if (type == null) continue;
 
+            // 3. resolver title, saltar si no se puede determinar
             String title = node.has("title")
                 ? node.path("title").asText(null)
                 : node.path("name").asText(null);
 
             if (title == null) continue;
 
+            // 4. resolver fecha y year
             String date = node.has("release_date")
                 ? node.path("release_date").asText("")
                 : node.path("first_air_date").asText("");
             Integer year = extractYear(date);
 
+            // 5. resolver poster y knownFor
             String posterPath = "person".equals(type)
                 ? emptyToNull(node.path("profile_path").asText(""))
                 : emptyToNull(node.path("poster_path").asText(""));
@@ -641,6 +662,7 @@ public class TmdbClient {
                 ? emptyToNull(node.path("known_for_department").asText(""))
                 : type;
 
+            // 6. construir y agregar el resultado
             out.add(
                 new SearchResult(
                     node.path("id").asLong(),

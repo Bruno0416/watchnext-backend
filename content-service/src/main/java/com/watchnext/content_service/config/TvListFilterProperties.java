@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.util.Set;
 import java.util.HashSet;
 
-// 1. Umbrales calibrables de las listas curadas de TV (popular/top-rated/on-the-air) sin recompilar.
+// umbrales calibrables de las listas curadas de tv (popular/top-rated/on-the-air) sin recompilar
 @Component
 @ConfigurationProperties(prefix = "watchnext.tv-filters")
 public class TvListFilterProperties {

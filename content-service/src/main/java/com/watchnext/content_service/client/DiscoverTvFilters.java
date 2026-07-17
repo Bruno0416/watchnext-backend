@@ -2,7 +2,7 @@ package com.watchnext.content_service.client;
 
 import java.time.LocalDate;
 
-// 1. Parametros opcionales de /discover/tv. Cualquier campo null se omite del query (ver fetchTvList).
+// parametros opcionales de /discover/tv, cualquier campo null se omite del query (ver fetchTvList)
 public record DiscoverTvFilters(
     String withGenres,
     String sortBy,
@@ -14,6 +14,7 @@ public record DiscoverTvFilters(
 ) {
 
     public static DiscoverTvFilters of(String withGenres, String sortBy) {
+        // 1. construir filtros con solo genero y orden, resto null
         return new DiscoverTvFilters(withGenres, sortBy, null, null, null, null, null);
     }
 }
