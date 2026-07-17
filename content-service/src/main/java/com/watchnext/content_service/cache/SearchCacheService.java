@@ -7,6 +7,7 @@ import com.watchnext.content_service.dto.search.ParsedQuery;
 import com.watchnext.content_service.dto.search.SearchResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -101,7 +102,7 @@ public class SearchCacheService {
         String raw = String.join(
             "|",
             query.cleanQuery(),
-            String.valueOf(query.year()),
+            Objects.toString(query.year(), ""),
             typesStr,
             language
         );

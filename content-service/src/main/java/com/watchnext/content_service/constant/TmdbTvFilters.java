@@ -1,14 +1,14 @@
 package com.watchnext.content_service.constant;
 
-// 1. Constantes TMDB para filtrar listas curadas de TV a solo contenido guionizado relevante.
-// 2. TMDB separa valores multiples con "|" (OR) o "," (AND); with_type requiere OR: "," da 0 resultados
-//    (Scripted AND Miniseries simultaneamente es imposible), verificado empiricamente contra /discover/tv.
+// constantes tmdb para filtrar listas curadas de tv a solo contenido guionizado relevante
+// tmdb separa valores multiples con "|" (or) o "," (and); with_type requiere or: "," da 0 resultados
+// (scripted and miniseries simultaneamente es imposible), verificado empiricamente contra /discover/tv
 public final class TmdbTvFilters {
 
     private TmdbTvFilters() {
     }
 
-    // ---------- with_type (TMDB TV type codes) ----------
+    // ---------- with_type (tmdb tv type codes) ----------
     public static final String TYPE_SCRIPTED = "4";
     public static final String TYPE_MINISERIES = "2";
     public static final String ALLOWED_TYPES = TYPE_SCRIPTED + "|" + TYPE_MINISERIES;
@@ -19,10 +19,9 @@ public final class TmdbTvFilters {
     public static final String GENRE_SOAP = "10766";
     public static final String GENRE_TALK = "10767";
     public static final String GENRE_KIDS = "10762";
-    public static final String GENRE_FAMILY = "10751";
     public static final String GENRE_DOCUMENTARY = "99";
 
     public static final String BLACKLISTED_GENRES = String.join(
-        "|", GENRE_SOAP, GENRE_REALITY, GENRE_TALK, GENRE_NEWS, GENRE_KIDS, GENRE_FAMILY, GENRE_DOCUMENTARY
+        "|", GENRE_SOAP, GENRE_REALITY, GENRE_TALK, GENRE_NEWS, GENRE_KIDS, GENRE_DOCUMENTARY
     );
 }

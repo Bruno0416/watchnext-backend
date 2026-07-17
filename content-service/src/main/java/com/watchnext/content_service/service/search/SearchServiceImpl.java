@@ -84,7 +84,7 @@ public class SearchServiceImpl implements SearchService {
         // 1. determinar si se debe corregir la ortografia
         boolean shouldCorrect = shouldCorrect(parsed, language);
 
-        // 2. aplicar correccion ortografica si es necesario
+        // 2. aplicar correccion ortografica si es necesario y calcular si hubo correccion
         String executedQuery = shouldCorrect
             ? spellCorrector.correct(parsed.cleanQuery(), language)
             : parsed.cleanQuery();
@@ -112,8 +112,9 @@ public class SearchServiceImpl implements SearchService {
         String language,
         Set<String> types
     ) {
-        // 1. filtrar solo los types que tmdb soporta
-        Set<String> tmdbTypes = types.stream()
+        // 1. asegurar set de types no nulo y filtrar solo los que tmdb soporta
+        Set<String> safeTypes = types != null ? types : Set.of();
+        Set<String> tmdbTypes = safeTypes.stream()
             .filter(t -> Set.of("movie", "tv", "person").contains(t))
             .collect(java.util.stream.Collectors.toSet());
 
@@ -164,6 +165,7 @@ public class SearchServiceImpl implements SearchService {
 
     private Set<String> normalizeTypes(Set<String> types) {
         // 1. filtrar solo los types validos y devolver un set inmutable
+        if (types == null) return Set.of();
         return types.stream()
             .filter(t -> Set.of("movie", "tv", "person").contains(t))
             .collect(java.util.stream.Collectors.toUnmodifiableSet());

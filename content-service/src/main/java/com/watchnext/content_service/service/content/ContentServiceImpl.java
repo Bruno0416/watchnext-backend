@@ -85,8 +85,9 @@ public class ContentServiceImpl implements ContentService {
 
     @Override
     public Mono<List<WatchProvider>> getMovieWatchProviders(Integer movieId, String country, String region) {
-        // 1. resolver el pais efectivo: param de URL > header X-Region > default de config.
+        // 1. resolver el pais efectivo: param de url > header x-region > default de config
         String resolvedCountry = resolveCountry(country, region);
+        // 2. buscar proveedores en cache o consultar streaming availability api
         return cacheOrFetchList(
             "movie:providers:" + resolvedCountry + ":" + movieId,
             PROVIDERS_TIME,
@@ -98,16 +99,23 @@ public class ContentServiceImpl implements ContentService {
     }
 
     private Mono<MovieDetails> fetchEnrichedMovie(Integer movieId, String language) {
+        // 1. obtener detalles base desde tmdb
         return tmdbClient.getMovieDetails(movieId, language, null).flatMap(raw -> {
+            // 2. construir cast, videos y directores
             List<CastMember> cast = ContentEnrichment.trimCast(castFrom(raw.credits()));
             List<Video> videos = ContentEnrichment.normalizeVideos(videosFrom(raw.videos()));
             List<CrewMember> directors = extractDirectors(raw.credits());
+
+            // 3. construir recomendaciones, similares, keywords y titulos alternativos
             List<MediaSummary> recommendations = mapMediaSummaries(raw.recommendations(), "movie");
             List<MediaSummary> similar = mapMediaSummaries(raw.similar(), "movie");
-            List<Genre> keywords = raw.keywords() != null ? raw.keywords().keywords() : List.of();
+            List<Genre> keywords = raw.keywords() != null && raw.keywords().keywords() != null
+                ? raw.keywords().keywords() : List.of();
             List<com.watchnext.content_service.dto.common.AlternativeTitle> altTitles =
-                raw.alternativeTitles() != null ? raw.alternativeTitles().titles() : List.of();
+                raw.alternativeTitles() != null && raw.alternativeTitles().titles() != null
+                    ? raw.alternativeTitles().titles() : List.of();
 
+            // 4. si no hay videos y el idioma no es ingles, reintentar con en-us
             if (videos.isEmpty() && !isEnglish(language)) {
                 return tmdbClient.getMovieDetails(movieId, "en-US", null)
                     .map(fallback -> buildMovieDetails(raw, cast,
@@ -214,11 +222,17 @@ public class ContentServiceImpl implements ContentService {
 
     @Override
     public Mono<MovieListResponse> getMoviesByGenre(Set<Integer> genre, Integer page, String language, String region) {
+        // 1. salir temprano con pagina vacia si no se especificaron generos
+        if (genre == null || genre.isEmpty()) {
+            return Mono.just(new MovieListResponse(0, List.of(), 0, 0, null));
+        }
+        // 2. construir el string de generos ordenado
         String genresString = genre.stream()
                                    .sorted()
                                    .map(String::valueOf)
                                    .collect(Collectors.joining("|"));
 
+        // 3. normalizar region y buscar en cache o tmdb
         String normalizedRegion = normalizeRegionOrNull(region);
         String key = "movie:by-genre:" + genresString + ":" + page + ":" + language + ":" + (normalizedRegion != null ? normalizedRegion : "nr");
 
@@ -236,7 +250,7 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
-    // ----------> TV Series <----------
+    // ---------- tv series ----------
 
     @Override
     public Mono<TvDetails> getTvDetails(Integer tvId, String language) {
@@ -250,8 +264,9 @@ public class ContentServiceImpl implements ContentService {
 
     @Override
     public Mono<List<WatchProvider>> getTvWatchProviders(Integer tvId, String country, String region) {
-        // 1. resolver el pais efectivo: param de URL > header X-Region > default de config.
+        // 1. resolver el pais efectivo: param de url > header x-region > default de config
         String resolvedCountry = resolveCountry(country, region);
+        // 2. buscar proveedores en cache o consultar streaming availability api
         return cacheOrFetchList(
             "tv:providers:" + resolvedCountry + ":" + tvId,
             PROVIDERS_TIME,
@@ -263,15 +278,22 @@ public class ContentServiceImpl implements ContentService {
     }
 
     private Mono<TvDetails> fetchEnrichedTv(Integer tvId, String language) {
+        // 1. obtener detalles base desde tmdb
         return tmdbClient.getTvDetails(tvId, language).flatMap(raw -> {
+            // 2. construir cast, videos y directores
             List<CastMember> cast = ContentEnrichment.trimCast(castFrom(raw.credits()));
             List<Video> videos = ContentEnrichment.normalizeVideos(videosFrom(raw.videos()));
+
+            // 3. construir recomendaciones, similares, keywords y titulos alternativos
             List<MediaSummary> recommendations = mapTvMediaSummaries(raw.recommendations());
             List<MediaSummary> similar = mapTvMediaSummaries(raw.similar());
-            List<Genre> keywords = raw.keywords() != null ? raw.keywords().keywords() : List.of();
+            List<Genre> keywords = raw.keywords() != null && raw.keywords().keywords() != null
+                ? raw.keywords().keywords() : List.of();
             List<com.watchnext.content_service.dto.common.AlternativeTitle> altTitles =
-                raw.alternativeTitles() != null ? raw.alternativeTitles().titles() : List.of();
+                raw.alternativeTitles() != null && raw.alternativeTitles().titles() != null
+                    ? raw.alternativeTitles().titles() : List.of();
 
+            // 4. si no hay videos y el idioma no es ingles, reintentar con en-us
             if (videos.isEmpty() && !isEnglish(language)) {
                 return tmdbClient.getTvDetails(tvId, "en-US")
                     .map(fallback -> buildTvDetails(raw, cast,
@@ -319,25 +341,31 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
-    // 1. reemplaza /tv/on_the_air por /discover/tv: filtra por tipo guionizado, blacklist de generos
-    //    y ventana de air_date (episodios emitidos recientemente o por emitir), no first_air_date.
-    // 2. la clave de cache incluye la ventana calculada para no servir resultados de un dia anterior.
-    // 1. Descartar del payload resultante aquellos IDs presentes en el denylist manual 
-    //    (shows engañosos mal etiquetados por TMDB como Good Mythical Morning).
+    // descarta del payload resultante aquellos ids presentes en el denylist manual
+    // (shows enganosos mal etiquetados por tmdb como good mythical morning)
     private TvListResponse filterDenylistedShows(TvListResponse response) {
+        // 1. salir temprano si no hay denylist o respuesta vacia
+        if (response == null || response.results() == null) return response;
         if (tvListFilterProperties.getExcludedShowIds() == null || tvListFilterProperties.getExcludedShowIds().isEmpty()) {
             return response;
         }
+        // 2. filtrar los resultados excluyendo ids del denylist
         List<TvSummary> filteredResults = response.results().stream()
             .filter(show -> !tvListFilterProperties.getExcludedShowIds().contains(show.id()))
             .toList();
+        // 3. reconstruir la respuesta con la lista filtrada
         return new TvListResponse(response.page(), filteredResults, response.totalPages(), response.totalResults());
     }
 
+    // reemplaza /tv/on_the_air por /discover/tv: filtra por tipo guionizado, blacklist de generos
+    // y ventana de air_date (episodios emitidos recientemente o por emitir), no first_air_date;
+    // la clave de cache incluye la ventana calculada para no servir resultados de un dia anterior
     @Override
     public Mono<TvListResponse> getOnTheAir(Integer page, String language) {
+        // 1. calcular la ventana de air_date segun configuracion
         LocalDate airDateGte = LocalDate.now().minusDays(tvListFilterProperties.getOnAirPastDays());
         LocalDate airDateLte = LocalDate.now().plusDays(tvListFilterProperties.getOnAirFutureDays());
+        // 2. construir los filtros de discover/tv
         DiscoverTvFilters filters = new DiscoverTvFilters(
             null,
             "popularity.desc",
@@ -347,18 +375,21 @@ public class ContentServiceImpl implements ContentService {
             airDateGte,
             airDateLte
         );
+        // 3. buscar en cache o tmdb usando la ventana en la clave
         return cacheOrFetch(
             "tv:on_the_air:v2:" + airDateGte + ":" + airDateLte + ":" + page + ":" + language,
             TvListResponse.class,
             LISTS_TIME,
             tmdbClient.discoverTv(filters, page, language, null)
+        // 4. filtrar shows del denylist
         ).map(this::filterDenylistedShows);
     }
 
-    // 1. reemplaza /tv/popular por /discover/tv: solo Scripted|Miniseries, sin generos de la blacklist
-    //    y vote_count.gte para descartar titulos obscuros.
+    // reemplaza /tv/popular por /discover/tv: solo scripted|miniseries, sin generos de la blacklist
+    // y vote_count.gte para descartar titulos obscuros
     @Override
     public Mono<TvListResponse> getPopularTv(Integer page, String language) {
+        // 1. construir los filtros de discover/tv con blacklist y umbral de votos
         DiscoverTvFilters filters = new DiscoverTvFilters(
             null,
             "popularity.desc",
@@ -368,18 +399,21 @@ public class ContentServiceImpl implements ContentService {
             null,
             null
         );
+        // 2. buscar en cache o tmdb
         return cacheOrFetch(
             "tv:popular:v2:" + page + ":" + language,
             TvListResponse.class,
             LISTS_TIME,
             tmdbClient.discoverTv(filters, page, language, null)
+        // 3. filtrar shows del denylist
         ).map(this::filterDenylistedShows);
     }
 
-    // 1. reemplaza /tv/top_rated por /discover/tv: mismo criterio de calidad, ordenado por vote_average
-    //    y con un vote_count.gte mas alto para que el ranking sea representativo.
+    // reemplaza /tv/top_rated por /discover/tv: mismo criterio de calidad, ordenado por vote_average
+    // y con un vote_count.gte mas alto para que el ranking sea representativo
     @Override
     public Mono<TvListResponse> getTopRatedTv(Integer page, String language) {
+        // 1. construir los filtros de discover/tv con blacklist y umbral de votos
         DiscoverTvFilters filters = new DiscoverTvFilters(
             null,
             "vote_average.desc",
@@ -389,11 +423,13 @@ public class ContentServiceImpl implements ContentService {
             null,
             null
         );
+        // 2. buscar en cache o tmdb
         return cacheOrFetch(
             "tv:top_rated:v2:" + page + ":" + language,
             TvListResponse.class,
             LISTS_TIME,
             tmdbClient.discoverTv(filters, page, language, null)
+        // 3. filtrar shows del denylist
         ).map(this::filterDenylistedShows);
     }
 
@@ -403,12 +439,14 @@ public class ContentServiceImpl implements ContentService {
         Integer seasonNumber,
         String language
     ) {
+        // 1. obtener episodios de la temporada desde cache o tmdb
         return cacheOrFetch(
             "tv:season:" + tvId + ":" + seasonNumber + ":" + language,
             TvSeasonDetail.class,
             DETAILS_TIME,
             tmdbClient.getTvSeason(tvId, seasonNumber, language)
                 .map(raw -> {
+                    // 2. calcular el promedio ponderado de la temporada
                     Double avg = calculateSeasonAverage(raw.episodes());
                     return new TvSeasonDetail(
                         raw.id(), raw.name(), raw.overview(),
@@ -420,7 +458,9 @@ public class ContentServiceImpl implements ContentService {
     }
 
     private static Double calculateSeasonAverage(List<TvEpisode> episodes) {
+        // 1. validar que haya episodios
         if (episodes == null || episodes.isEmpty()) return null;
+        // 2. acumular suma ponderada y total de votos
         double weightedSum = 0;
         int totalVotes = 0;
         for (TvEpisode ep : episodes) {
@@ -430,6 +470,7 @@ public class ContentServiceImpl implements ContentService {
                 totalVotes += ep.voteCount();
             }
         }
+        // 3. retornar el promedio o null si no hay votos
         return totalVotes > 0
             ? Math.round(weightedSum / totalVotes * 10.0) / 10.0
             : null;
@@ -470,11 +511,17 @@ public class ContentServiceImpl implements ContentService {
 
     @Override
     public Mono<TvListResponse> getSeriesByGenre(Set<Integer> genre, Integer page, String language, String region) {
+        // 1. salir temprano con pagina vacia si no se especificaron generos
+        if (genre == null || genre.isEmpty()) {
+            return Mono.just(new TvListResponse(0, List.of(), 0, 0));
+        }
+        // 2. construir el string de generos ordenado
         String genresString = genre.stream()
                                    .sorted()
                                    .map(String::valueOf)
                                    .collect(Collectors.joining("|"));
 
+        // 3. normalizar region y buscar en cache o tmdb
         String normalizedRegion = normalizeRegionOrNull(region);
         String key = "tv:by-genre:" + genresString + ":" + page + ":" + language + ":" + (normalizedRegion != null ? normalizedRegion : "nr");
 
@@ -492,7 +539,7 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
-    // ----------> Persons <----------
+    // ---------- persons ----------
 
     @Override
     public Mono<PersonDetails> getPersonDetails(Long personId, String language) {
@@ -519,7 +566,7 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
-    // --- Helper privado ---
+    // --- helper privado ---
     private static List<PersonCredit> buildFilmography(PersonDetailsRaw.CombinedCredits credits) {
         // 1. salir temprano si no hay creditos
         if (credits == null) return List.of();
@@ -538,7 +585,7 @@ public class ContentServiceImpl implements ContentService {
             .toList();
     }
 
-    // ----------> Genres <----------
+    // ---------- genres ----------
 
     @Override
     public Mono<GenreListResponse> getMovieGenres(String language) {
@@ -560,7 +607,7 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
-    // ----------> Trending <----------
+    // ---------- trending ----------
 
     @Override
     public Mono<TrendingResponse> getTrending(
@@ -576,7 +623,7 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
-    // ----------> Collections <----------
+    // ---------- collections ----------
 
     @Override
     public Mono<CollectionDetails> getCollection(
@@ -591,32 +638,35 @@ public class ContentServiceImpl implements ContentService {
         );
     }
 
-    // -----------------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------------
+    // ---------- helpers privados ----------
 
     private boolean isEnglish(String language) {
         return language == null || language.startsWith("en");
     }
 
-    // 1. resolver el pais para watch-providers: query param > header X-Region > default de config.
-    // 2. cualquier valor invalido/no-ISO se descarta y se sigue con el siguiente en la precedencia.
+    // resuelve el pais para watch-providers: query param > header x-region > default de config;
+    // cualquier valor invalido/no-iso se descarta y se sigue con el siguiente en la precedencia
     private String resolveCountry(String country, String region) {
+        // 1. usar el country del query param si es valido
         if (CountryCodes.isValid(country)) return CountryCodes.normalize(country);
+        // 2. si no, usar la region del header si es valida
         if (CountryCodes.isValid(region)) return CountryCodes.normalize(region);
+        // 3. si no, usar la region default de configuracion
         return tmdbProperties.getDefaultRegion();
     }
 
-    // 1. normalizar la region para discover/by-genre: null si no vino o si no es un ISO 3166 valido.
+    // normaliza la region para discover/by-genre: null si no vino o si no es un iso 3166 valido
     private String normalizeRegionOrNull(String region) {
+        // 1. normalizar la region y validar que sea iso 3166
         if (region == null) return null;
         String normalized = CountryCodes.normalize(region);
         return CountryCodes.isValid(normalized) ? normalized : null;
     }
 
-    // 1. deduplicar por servicio: si un mismo servicio aparece con varios tipos (subscription/rent/buy/...),
-    // preferir subscription o free por sobre rent/buy/addon.
+    // deduplica por servicio: si un mismo servicio aparece con varios tipos (subscription/rent/buy/...),
+    // prefiere subscription o free por sobre rent/buy/addon
     private static List<WatchProvider> dedupeByService(List<StreamingOptionSummary> options) {
+        // 1. agrupar por servicio, preferir subscription/free sobre rent/buy
         Map<String, StreamingOptionSummary> bestByService = new LinkedHashMap<>();
         for (StreamingOptionSummary option : options) {
             StreamingOptionSummary current = bestByService.get(option.serviceId());
@@ -624,6 +674,7 @@ public class ContentServiceImpl implements ContentService {
                 bestByService.put(option.serviceId(), option);
             }
         }
+        // 2. mapear a watchprovider
         return bestByService.values().stream()
             .map(o -> new WatchProvider(o.name(), o.iconLight(), o.iconDark(), o.link()))
             .toList();
@@ -672,6 +723,7 @@ public class ContentServiceImpl implements ContentService {
     ) {
         if (response == null || response.results() == null) return List.of();
         return response.results().stream()
+            .filter(m -> m.id() != null)
             .map(m -> new MediaSummary(
                 m.id().longValue(), m.title(), m.posterPath(),
                 m.voteAverage(), mediaType, m.releaseDate()))
@@ -681,6 +733,7 @@ public class ContentServiceImpl implements ContentService {
     private static List<MediaSummary> mapTvMediaSummaries(TvListResponse response) {
         if (response == null || response.results() == null) return List.of();
         return response.results().stream()
+            .filter(t -> t.id() != null)
             .map(t -> new MediaSummary(
                 t.id().longValue(), t.name(), t.posterPath(),
                 t.voteAverage(), "tv", t.firstAirDate()))
@@ -693,11 +746,13 @@ public class ContentServiceImpl implements ContentService {
         Duration ttl,
         Mono<T> fetch
     ) {
+        // 1. buscar el valor en cache
         return redisTemplate
             .opsForValue()
             .get(cacheKey)
             .cast(type)
             .onErrorResume(e -> Mono.empty())
+            // 2. si no esta, ejecutar fetch y guardarlo en cache
             .switchIfEmpty(
                 fetch.flatMap(value ->
                     redisTemplate
@@ -709,20 +764,22 @@ public class ContentServiceImpl implements ContentService {
             );
     }
 
-    // 1. variante de cacheOrFetch para listas: el tipo generico de la lista se pierde en Redis,
-    // por eso se castea a List crudo y se confia en el tipo inferido por el Mono de fetch.
+    // variante de cacheOrFetch para listas: el tipo generico de la lista se pierde en redis,
+    // por eso se castea a list crudo y se confia en el tipo inferido por el mono de fetch
     @SuppressWarnings("unchecked")
     private <T> Mono<List<T>> cacheOrFetchList(
         String cacheKey,
         Duration ttl,
         Mono<List<T>> fetch
     ) {
+        // 1. buscar el valor en cache
         return redisTemplate
             .opsForValue()
             .get(cacheKey)
             .cast(List.class)
             .map(list -> (List<T>) list)
             .onErrorResume(e -> Mono.empty())
+            // 2. si no esta, ejecutar fetch y guardarlo en cache
             .switchIfEmpty(
                 fetch.flatMap(value ->
                     redisTemplate

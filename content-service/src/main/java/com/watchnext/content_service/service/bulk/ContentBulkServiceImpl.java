@@ -39,8 +39,12 @@ public class ContentBulkServiceImpl implements ContentBulkService {
         ContentRefRequest ref,
         String language
     ) {
+        // 1. salir temprano si no hay id de tmdb
+        if (ref.tmdbId() == null) return Mono.empty();
+        // 2. extraer el id de tmdb
         Integer id = ref.tmdbId().intValue();
 
+        // 3. buscar detalles segun el tipo de media (movie o tv)
         if (ref.mediaType() == MediaType.MOVIE) {
             return contentService
                 .getMovieDetails(id, language)
