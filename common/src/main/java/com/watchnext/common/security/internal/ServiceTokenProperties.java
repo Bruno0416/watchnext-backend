@@ -1,5 +1,6 @@
 package com.watchnext.common.security.internal;
 
+import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -9,6 +10,16 @@ public class ServiceTokenProperties {
     private String secretKey;
     private Duration expiration = Duration.ofMinutes(3);
     private Duration cacheTtl = Duration.ofSeconds(150);
+
+    @PostConstruct
+    void validateConfig() {
+        // 1. lanzar error en startup si la clave secreta no esta configurada
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException(
+                "La propiedad 'application.security.service-token.secret-key' es obligatoria"
+            );
+        }
+    }
 
     public String getSecretKey() {
         return secretKey;

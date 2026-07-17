@@ -25,9 +25,13 @@ public class StringToEnumConverterFactory implements ConverterFactory<String, En
         @Override
         public T convert(String source) {
             if (source == null || source.isBlank()) {
-                return null;
+                // 1. no se puede convertir un string vacio a enum
+                throw new IllegalArgumentException(
+                    "No se puede convertir un valor vacio o nulo al enum " + enumType.getSimpleName()
+                );
             }
 
+            // 2. normalizar y convertir el string al valor del enum
             return (T) Enum.valueOf(this.enumType, source.trim().toUpperCase());
         }
     }
