@@ -1,0 +1,2 @@
+# los scripts de bash corren dentro de linux (docker), siempre con fin de linea LF
+*.sh text eol=lf

@@ -6,24 +6,23 @@ spring:
     name: news-service
 
   datasource:
-    url: ${NEWS_DB_URL:jdbc:postgresql://ep-floral-paper-acot5jab-pooler.sa-east-1.aws.neon.tech:5432/news_db?sslmode=require}
-    username: ${NEWS_DB_USER}
-    password: ${NEWS_DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    # fuera de docker usa el mysql de laragon (3306, root sin clave) y crea la base si no existe; docker-compose pasa sus propios datos
+    url: jdbc:mysql://${WATCHNEXT_DB_HOST:localhost}:${WATCHNEXT_DB_PORT:3306}/news_db?createDatabaseIfNotExist=true
+    username: ${WATCHNEXT_DB_USER:root}
+    password: ${WATCHNEXT_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   # ---------- migraciones ----------
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: true
-    baseline-version: 0
 
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQLDialect
 
 application:
   security:

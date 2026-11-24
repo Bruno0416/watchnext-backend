@@ -63,9 +63,16 @@ services:
       dockerfile: auth-service/Dockerfile
     container_name: watch_next_auth
     env_file: .env
+    environment:
+      - WATCHNEXT_DB_HOST=mysql
+      - WATCHNEXT_DB_PORT=3306
+      - WATCHNEXT_DB_USER=${WATCHNEXT_DB_USER:-watchnext}
+      - WATCHNEXT_DB_PASSWORD=${WATCHNEXT_DB_PASSWORD:-watchnext}
     depends_on:
       eureka-server:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     networks:
       - watch_next-network
 
@@ -95,6 +102,47 @@ services:
     networks:
       - watch_next-network
 
+  # ---- MYSQL (una base por microservicio) ----
+  # mysql en docker por si no hay laragon; desde heidisql: 127.0.0.1, puerto 3307, usuario root o watchnext
+  mysql:
+    image: mysql:8.4
+    container_name: watch_next_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${WATCHNEXT_DB_ROOT_PASSWORD:-root}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - watch_next-network
+
+  # ---- DB-INIT (crea las bases y el usuario, igual que en pagoflex) ----
+  db-init:
+    image: mysql:8.4
+    container_name: watch_next_db_init
+    restart: "no"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_ROOT_PASSWORD: ${WATCHNEXT_DB_ROOT_PASSWORD:-root}
+      DB_USER: ${WATCHNEXT_DB_USER:-watchnext}
+      DB_PASSWORD: ${WATCHNEXT_DB_PASSWORD:-watchnext}
+    volumes:
+      - ./db-init/init.sh:/opt/watchnext/init.sh:ro
+    # tr quita los \r por si el archivo se clono en windows con CRLF
+    entrypoint: ["/bin/bash", "-c", "tr -d '\\r' < /opt/watchnext/init.sh | bash"]
+    networks:
+      - watch_next-network
+
   # ---- LISTS ----
   list-service:
     build:
@@ -102,9 +150,16 @@ services:
       dockerfile: list-service/Dockerfile
     container_name: watch_next_list
     env_file: .env
+    environment:
+      - WATCHNEXT_DB_HOST=mysql
+      - WATCHNEXT_DB_PORT=3306
+      - WATCHNEXT_DB_USER=${WATCHNEXT_DB_USER:-watchnext}
+      - WATCHNEXT_DB_PASSWORD=${WATCHNEXT_DB_PASSWORD:-watchnext}
     depends_on:
       eureka-server:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     networks:
       - watch_next-network
 
@@ -115,9 +170,16 @@ services:
       dockerfile: news-service/Dockerfile
     container_name: watch_next_news
     env_file: .env
+    environment:
+      - WATCHNEXT_DB_HOST=mysql
+      - WATCHNEXT_DB_PORT=3306
+      - WATCHNEXT_DB_USER=${WATCHNEXT_DB_USER:-watchnext}
+      - WATCHNEXT_DB_PASSWORD=${WATCHNEXT_DB_PASSWORD:-watchnext}
     depends_on:
       eureka-server:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     networks:
       - watch_next-network
 
@@ -128,9 +190,16 @@ services:
       dockerfile: feedback-service/Dockerfile
     container_name: watch_next_feedback
     env_file: .env
+    environment:
+      - WATCHNEXT_DB_HOST=mysql
+      - WATCHNEXT_DB_PORT=3306
+      - WATCHNEXT_DB_USER=${WATCHNEXT_DB_USER:-watchnext}
+      - WATCHNEXT_DB_PASSWORD=${WATCHNEXT_DB_PASSWORD:-watchnext}
     depends_on:
       eureka-server:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     networks:
       - watch_next-network
 
@@ -143,9 +212,15 @@ services:
     env_file: .env
     environment:
       - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=TRACE
+      - WATCHNEXT_DB_HOST=mysql
+      - WATCHNEXT_DB_PORT=3306
+      - WATCHNEXT_DB_USER=${WATCHNEXT_DB_USER:-watchnext}
+      - WATCHNEXT_DB_PASSWORD=${WATCHNEXT_DB_PASSWORD:-watchnext}
     depends_on:
       eureka-server:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     networks:
       - watch_next-network
 
@@ -183,3 +258,6 @@ networks:
   watch_next-network:
     name: watch_next_shared_network
     driver: bridge
+
+volumes:
+  mysql-data:
