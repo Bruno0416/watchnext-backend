@@ -9,6 +9,8 @@ import static org.springframework.web.servlet.function.RequestPredicates.path;
 import java.time.Duration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.servlet.function.HandlerFilterFunction;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerRequest;
@@ -16,6 +18,17 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 @Configuration
 public class RateLimitedRoutesConfig {
+
+    // 0. AUTH ADMIN - panel de usuarios, va antes que auth para no caer en el limite de login
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public RouterFunction<ServerResponse> authAdminRoute() {
+        return route("auth-admin")
+            .route(path("/api/v1/auth/admin/**"), http())
+            .filter(lb("AUTH-SERVICE"))
+            .filter(perPathRateLimit(60))
+            .build();
+    }
 
     // 1. AUTH - endpoints sensibles
     @Bean

@@ -50,6 +50,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             || path.startsWith("/swagger-ui")
             || path.startsWith("/v3/api-docs");
 
+        // 3. el panel admin de auth si pide token
+        if (path.startsWith("/api/v1/auth/admin")) isPublicPath = false;
+
         if (!isPublicPath) {
             try {
                 String token;
