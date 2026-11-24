@@ -22,6 +22,14 @@ user-service:
   api:
     base-url: http://user-service:9001/api/v1/users/internal
 
+list-service:
+  api:
+    base-url: http://list-service:9002/api/v1/list/internal
+
+feedback-service:
+  api:
+    base-url: http://feedback-service:9003/api/v1/feedback/internal
+
 email-service:
   api:
     base-url: http://email-service:9000/email

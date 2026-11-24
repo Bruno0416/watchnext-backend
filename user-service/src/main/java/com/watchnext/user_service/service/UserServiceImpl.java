@@ -48,7 +48,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserServiceImpl implements UserService {
 
     // --- Constantes ---
-    private static final Set<String> RESERVED_USERNAMES = Set.of(
+    public static final Set<String> RESERVED_USERNAMES = Set.of(
         "admin",
         "api",
         "me",

@@ -33,6 +33,15 @@ user-service:
   api:
     base-url: ${USER_SERVICE_INTERNAL_URL:http://user-service:8085/api/v1/users/internal}
 
+# ---------- baja de cuentas desde el panel admin ----------
+list-service:
+  api:
+    base-url: ${LIST_SERVICE_INTERNAL_URL:http://list-service:8083/api/v1/list/internal}
+
+feedback-service:
+  api:
+    base-url: ${FEEDBACK_SERVICE_INTERNAL_URL:http://feedback-service:8084/api/v1/feedback/internal}
+
 email-service:
   api:
     base-url: http://email-service:8086/api/v1/email/internal
