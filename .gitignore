@@ -30,8 +30,4 @@ inputFiles.lst
 .DS_Store
 Thumbs.db
 
-docs
-.serena
 .env
-.opencode
-openspec
