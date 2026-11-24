@@ -30,6 +30,7 @@
         <resend.version>v4.15.0</resend.version>
         <bucket.version>8.19.0</bucket.version>
         <caffeine.version>3.2.4</caffeine.version>
+        <springdoc.version>3.0.3</springdoc.version>
     </properties>
 
     <dependencyManagement>
@@ -106,6 +107,17 @@
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
             </dependency>
+            <!-- documentacion swagger (openapi) -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -121,6 +133,7 @@
         <module>gateway</module>
         <module>eureka-server</module>
         <module>search-service</module>
+        <module>news-service</module>
     </modules>
 
     <build>

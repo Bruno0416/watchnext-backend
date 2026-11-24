@@ -33,4 +33,7 @@ public interface FollowRepository extends JpaRepository<Follow, UUID> {
     List<Follow> findByFolloweeAndStatus(Profile followee, FollowStatus status);
 
     List<Follow> findByFollowerAndStatus(Profile follower, FollowStatus status);
+
+    // todas las relaciones donde participa el perfil, para la baja de admin
+    List<Follow> findByFollowerOrFollowee(Profile follower, Profile followee);
 }

@@ -31,6 +31,11 @@ public class ContentServiceClient {
         List<ContentRefRequest> requests,
         String language
     ) {
+        // 0. sin favoritos no hay nada que pedir (content-service rechaza la lista vacia)
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+
         // 1. ejecutar peticion post para obtener multiples contenidos de forma masiva
         return restClient
             .post()

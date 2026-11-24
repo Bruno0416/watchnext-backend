@@ -1,6 +1,7 @@
 package com.watchnext.auth_service.repository;
 
 import com.watchnext.auth_service.entity.UserIdentity;
+import com.watchnext.auth_service.entity.Users;
 import com.watchnext.auth_service.enums.AuthProvider;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,4 +16,7 @@ public interface UserIdentityRepository
         AuthProvider provider,
         String providerUserId
     );
+
+    // logins sociales de la cuenta, para la baja de admin
+    void deleteAllByUser(Users user);
 }

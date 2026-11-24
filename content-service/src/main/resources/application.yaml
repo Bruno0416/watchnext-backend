@@ -72,3 +72,8 @@ watchnext:
         en-domain: dictionaries/watchnext_symspell_domain_en.txt
         es: dictionaries/es-100l.txt
         es-domain: dictionaries/watchnext_symspell_domain_es.txt
+
+# ---------- documentacion swagger ----------
+springdoc:
+  api-docs:
+    path: /api/v1/content/docs

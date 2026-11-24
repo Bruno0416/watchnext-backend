@@ -86,3 +86,23 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
+
+# ---------- documentacion swagger (todos los servicios en una pagina) ----------
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: auth
+        url: /api/v1/auth/docs
+      - name: users
+        url: /api/v1/users/docs
+      - name: content
+        url: /api/v1/content/docs
+      - name: list
+        url: /api/v1/list/docs
+      - name: feedback
+        url: /api/v1/feedback/docs
+      - name: search
+        url: /api/v1/search/docs
+      - name: news
+        url: /api/v1/news/docs

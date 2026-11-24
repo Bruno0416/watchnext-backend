@@ -1,6 +1,7 @@
 package com.watchnext.auth_service.service;
 
 import com.watchnext.auth_service.client.EmailServiceClient;
+import com.watchnext.auth_service.client.UserServiceClient;
 import com.watchnext.auth_service.dto.AuthResponse;
 import com.watchnext.auth_service.dto.ConfirmEmailRequest;
 import com.watchnext.auth_service.dto.LoginRequest;
@@ -43,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authManager;
 
     private final EmailServiceClient emailServiceClient;
+    private final UserServiceClient userServiceClient;
 
     // --- Helper privado ---
     private String normalizeEmail(String email) {
@@ -59,13 +61,16 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 2. registrar usuario
-        userRepo.save(
+        Users user = userRepo.save(
             Users.builder()
                 .email(email)
                 .password(passwordEncoder.encode(request.password()))
                 .role(Role.USER)
                 .build()
         );
+
+        // 2.1. crear su perfil vacio en user-service
+        userServiceClient.provisionProfile(user.getId());
 
         // 3. generar y enviar codigo de confirmación por email
         String confirmationCode = verifCodeService.generateCode(

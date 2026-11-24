@@ -1,5 +1,6 @@
 package com.watchnext.auth_service.service.social;
 
+import com.watchnext.auth_service.client.UserServiceClient;
 import com.watchnext.auth_service.dto.AuthResponse;
 import com.watchnext.auth_service.dto.social.SocialUserInfo;
 import com.watchnext.auth_service.entity.UserIdentity;
@@ -30,6 +31,7 @@ public class SocialAuthService {
     private final UserIdentityRepository identityRepo;
     private final JwtUtil jwtService;
     private final List<SocialTokenVerifier> verifiers;
+    private final UserServiceClient userServiceClient;
 
     private Map<AuthProvider, SocialTokenVerifier> verifiersByProvider;
 
@@ -99,6 +101,9 @@ public class SocialAuthService {
                 .build()
         );
         linkIdentity(newUser, info);
+
+        // crear su perfil vacio en user-service
+        userServiceClient.provisionProfile(newUser.getId());
         return newUser;
     }
 

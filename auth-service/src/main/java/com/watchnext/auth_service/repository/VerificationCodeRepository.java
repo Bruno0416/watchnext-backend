@@ -16,4 +16,7 @@ public interface VerificationCodeRepository
     );
 
     void deleteAllByEmailAndType(String email, CodeType type);
+
+    // todos los codigos del correo, para la baja de admin
+    void deleteAllByEmail(String email);
 }

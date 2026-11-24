@@ -8,7 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.watchnext.auth_service",
         "com.watchnext.common.exceptions",
         "com.watchnext.common.config",
-        "com.watchnext.common.security.internal"
+        "com.watchnext.common.security.internal",
+        "com.watchnext.common.security.openapi"
     }
 )
 public class AuthServiceApplication {

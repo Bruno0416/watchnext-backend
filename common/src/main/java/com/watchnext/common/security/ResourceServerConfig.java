@@ -6,6 +6,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,6 +34,11 @@ public class ResourceServerConfig {
                     RequestMatchers.anyOf(
                         PathPatternRequestMatcher.pathPattern("/api/v1/content/**"),
                         PathPatternRequestMatcher.pathPattern("/api/v1/search/**"),
+                        // noticias: leer es publico, escribir lo valida @PreAuthorize
+                        PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/api/v1/news/**"),
+                        // documentacion swagger de cada servicio
+                        PathPatternRequestMatcher.pathPattern("/api/v1/*/docs"),
+                        PathPatternRequestMatcher.pathPattern("/api/v1/*/docs/**"),
                         PathPatternRequestMatcher.pathPattern("/error")
                     ),
                     RequestMatchers.not(

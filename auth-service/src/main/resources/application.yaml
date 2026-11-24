@@ -10,17 +10,36 @@ spring:
         accept-case-insensitive-enums: true
 
   datasource:
-    url: ${AUTH_DB_URL:jdbc:postgresql://ep-floral-paper-acot5jab-pooler.sa-east-1.aws.neon.tech:5432/auth_db?sslmode=require}
-    username: ${AUTH_DB_USER}
-    password: ${AUTH_DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    # fuera de docker usa el mysql de laragon (3306, root sin clave) y crea la base si no existe; docker-compose pasa sus propios datos
+    url: jdbc:mysql://${WATCHNEXT_DB_HOST:localhost}:${WATCHNEXT_DB_PORT:3306}/auth_db?createDatabaseIfNotExist=true
+    username: ${WATCHNEXT_DB_USER:root}
+    password: ${WATCHNEXT_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ---------- migraciones ----------
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQLDialect
+
+user-service:
+  api:
+    base-url: ${USER_SERVICE_INTERNAL_URL:http://user-service:8085/api/v1/users/internal}
+
+# ---------- baja de cuentas desde el panel admin ----------
+list-service:
+  api:
+    base-url: ${LIST_SERVICE_INTERNAL_URL:http://list-service:8083/api/v1/list/internal}
+
+feedback-service:
+  api:
+    base-url: ${FEEDBACK_SERVICE_INTERNAL_URL:http://feedback-service:8084/api/v1/feedback/internal}
 
 email-service:
   api:
@@ -58,3 +77,8 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
+
+# ---------- documentacion swagger ----------
+springdoc:
+  api-docs:
+    path: /api/v1/auth/docs

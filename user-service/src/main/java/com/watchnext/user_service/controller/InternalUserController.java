@@ -1,5 +1,8 @@
 package com.watchnext.user_service.controller;
 
+import com.watchnext.user_service.dto.InternalProvisionRequest;
+import jakarta.validation.Valid;
+
 import com.watchnext.common.context.UserContext;
 import com.watchnext.common.dto.internal.PageResponse;
 import com.watchnext.user_service.dto.InternalFollowingResponse;
@@ -24,6 +27,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class InternalUserController {
 
     private final UserService service;
+
+    // ---------- provision (la llama auth-service al registrar) ----------
+    @PostMapping("/provision")
+    public ResponseEntity<Void> provisionProfile(
+        @Valid @RequestBody InternalProvisionRequest request
+    ) {
+        service.provisionProfile(request.authUserId().toString());
+        return ResponseEntity.noContent().build();
+    }
 
     // ---------- consultas internas ----------
     @GetMapping("/{authUserId}/following")

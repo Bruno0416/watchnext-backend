@@ -1,4 +1,7 @@
 spring:
+  flyway:
+    enabled: false
+
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
@@ -14,6 +17,18 @@ spring:
 eureka:
   client:
     enabled: false
+
+user-service:
+  api:
+    base-url: http://user-service:9001/api/v1/users/internal
+
+list-service:
+  api:
+    base-url: http://list-service:9002/api/v1/list/internal
+
+feedback-service:
+  api:
+    base-url: http://feedback-service:9003/api/v1/feedback/internal
 
 email-service:
   api:
