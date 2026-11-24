@@ -25,9 +25,16 @@ spring:
     password: ${USER_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+  # ---------- migraciones ----------
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -62,3 +69,8 @@ app:
   profile:
     favorites:
       max-size: 5
+
+# ---------- documentacion swagger ----------
+springdoc:
+  api-docs:
+    path: /api/v1/users/docs

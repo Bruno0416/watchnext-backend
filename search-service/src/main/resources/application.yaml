@@ -30,3 +30,8 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
+
+# ---------- documentacion swagger ----------
+springdoc:
+  api-docs:
+    path: /api/v1/search/docs

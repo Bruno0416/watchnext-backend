@@ -42,7 +42,13 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         // 2. validar si la ruta empieza con alguna de las rutas publicas
         boolean isPublicPath = publicPaths
             .stream()
-            .anyMatch(publicPath -> path.startsWith(publicPath));
+            .anyMatch(publicPath -> path.startsWith(publicPath))
+            // noticias: leer no pide sesion
+            || ("GET".equals(request.getMethod()) && path.startsWith("/api/v1/news"))
+            // documentacion swagger
+            || path.matches("^/api/v1/[a-z]+/docs(/.*)?$")
+            || path.startsWith("/swagger-ui")
+            || path.startsWith("/v3/api-docs");
 
         if (!isPublicPath) {
             try {

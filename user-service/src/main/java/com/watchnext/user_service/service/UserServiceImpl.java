@@ -23,6 +23,7 @@ import com.watchnext.user_service.exception.AlreadyFollowing;
 import com.watchnext.user_service.exception.CountryNotFound;
 import com.watchnext.user_service.exception.FollowRequestNotFound;
 import com.watchnext.user_service.exception.InvalidCountry;
+import com.watchnext.user_service.exception.OnboardingAlreadyCompleted;
 import com.watchnext.user_service.exception.ProfileNotFound;
 import com.watchnext.user_service.exception.UsernameAlreadyTaken;
 import com.watchnext.user_service.exception.UsernameReserved;
@@ -104,6 +105,33 @@ public class UserServiceImpl implements UserService {
         return mapper.toResponse(profile, contents);
     }
 
+    // ---------- provision desde auth-service ----------
+    @Override
+    @Transactional
+    public void provisionProfile(String authUserId) {
+        // 1. si ya existe no hago nada (auth puede reintentar)
+        if (profileRepo.findByUserId(authUserId).isPresent()) {
+            return;
+        }
+
+        // 2. username temporal unico hasta que el usuario haga el onboarding
+        String base = "user_" + authUserId.replace("-", "").substring(0, 10);
+        String username = base;
+        int intento = 1;
+        while (profileRepo.existsByUsername(username)) {
+            username = base + intento++;
+        }
+
+        // 3. crear perfil privado con onboarding pendiente
+        profileRepo.save(
+            Profile.builder()
+                .userId(authUserId)
+                .username(username)
+                .onboardingCompleted(false)
+                .build()
+        );
+    }
+
     // ---------- operaciones de perfil ----------
     @Override
     @Transactional
@@ -126,16 +154,22 @@ public class UserServiceImpl implements UserService {
         // 3. validar y normalizar el codigo de pais obligatorio en onboarding
         String country = normalizeAndValidateCountry(request.country());
 
-        // 4. crear nuevo perfil con datos base del onboarding
-        Profile profile = Profile.builder()
-            .userId(userId)
-            .username(username)
-            .visibility(request.visibility())
-            .displayName(request.displayName())
-            .bio(request.bio())
-            .country(country)
-            .onboardingCompleted(true)
-            .build();
+        // 4. reutilizar el perfil que creo auth-service al registrarse (o crearlo si no existe)
+        Profile profile = profileRepo
+            .findByUserId(userId)
+            .orElseGet(() -> Profile.builder().userId(userId).build());
+        if (profile.isOnboardingCompleted()) {
+            throw new OnboardingAlreadyCompleted();
+        }
+
+        // 4.1. completar datos base del onboarding
+        profile.setUsername(username);
+        if (request.visibility() != null) profile.setVisibility(request.visibility());
+        profile.setDisplayName(request.displayName());
+        profile.setBio(request.bio());
+        profile.setCountry(country);
+        profile.setOnboardingCompleted(true);
+        profile.getFavorites().clear();
 
         // 5. agregar el top n de favoritos si vienen en la request
         if (request.favorites() != null && !request.favorites().isEmpty()) {

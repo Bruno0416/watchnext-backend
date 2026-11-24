@@ -12,6 +12,7 @@ COPY email-service/pom.xml email-service/
 COPY gateway/pom.xml gateway/
 COPY eureka-server/pom.xml eureka-server/
 COPY search-service/pom.xml search-service/
+COPY news-service/pom.xml news-service/
 
 COPY settings.xml /root/.m2/settings.xml
 

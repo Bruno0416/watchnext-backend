@@ -17,6 +17,8 @@ public interface UserService {
     // ──────────────────── Perfil Propio ────────────────────
     ProfileResponse getMyProfile(String language);
 
+    void provisionProfile(String authUserId);
+
     void completeOnboarding(OnboardingRequest request, MultipartFile avatar);
 
     ProfileResponse updateProfile(UpdateProfileRequest request, String language);

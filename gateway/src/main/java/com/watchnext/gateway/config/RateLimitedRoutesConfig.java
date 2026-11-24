@@ -67,6 +67,16 @@ public class RateLimitedRoutesConfig {
             .build();
     }
 
+    // 6. NEWS - noticias (lectura publica, escritura admin)
+    @Bean
+    public RouterFunction<ServerResponse> newsServiceRoute() {
+        return route("news-service")
+            .route(path("/api/v1/news/**"), http())
+            .filter(lb("NEWS-SERVICE"))
+            .filter(perPathRateLimit(60))
+            .build();
+    }
+
     // --- Filtros reutilizables ---
     private static HandlerFilterFunction<
         ServerResponse,

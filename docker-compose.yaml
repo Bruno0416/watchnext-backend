@@ -46,6 +46,8 @@ services:
         condition: service_started
       search-service:
         condition: service_started
+      news-service:
+        condition: service_started
       eureka-server:
         condition: service_healthy
     env_file: .env
@@ -99,6 +101,19 @@ services:
       context: .
       dockerfile: list-service/Dockerfile
     container_name: watch_next_list
+    env_file: .env
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - watch_next-network
+
+  # ---- NEWS ----
+  news-service:
+    build:
+      context: .
+      dockerfile: news-service/Dockerfile
+    container_name: watch_next_news
     env_file: .env
     depends_on:
       eureka-server:

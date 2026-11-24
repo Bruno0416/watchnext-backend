@@ -1,0 +1,50 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: news-service
+
+  datasource:
+    url: ${NEWS_DB_URL:jdbc:postgresql://ep-floral-paper-acot5jab-pooler.sa-east-1.aws.neon.tech:5432/news_db?sslmode=require}
+    username: ${NEWS_DB_USER}
+    password: ${NEWS_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # ---------- migraciones ----------
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+    service-token:
+      secret-key: ${SERVICE_JWT_SECRET}
+      expiration: 3m
+      cache-ttl: 150s
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://admin:${EUREKA_ADMIN_PASSWD}@eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
+
+# ---------- documentacion swagger ----------
+springdoc:
+  api-docs:
+    path: /api/v1/news/docs
